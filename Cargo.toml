@@ -5,4 +5,5 @@ edition = "2024"
 
 [dependencies]
 gtk = { version = "0.9.6", package = "gtk4", features = ["v4_18"] }
-qmk-via-api = "0.2.1"
+nix = { version = "0.29.0", features = ["poll"] }
+input = "0.9.1"
