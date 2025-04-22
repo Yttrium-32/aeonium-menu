@@ -2,7 +2,10 @@ use gtk::prelude::*;
 use gtk::cairo;
 use gtk::{Application, ApplicationWindow, DrawingArea};
 
-const APP_ID: &str = "org.example.test";
+const WIN_W: i32 = 1920;
+const WIN_H: i32 = 1080;
+
+const APP_ID: &str = "yttrium32.aeonium.menu";
 
 fn main() {
     let app = Application::builder().application_id(APP_ID).build();
@@ -31,12 +34,15 @@ fn draw_circle(_: &DrawingArea, ctx: &cairo::Context, width: i32, height: i32) {
     ctx.paint().unwrap();
     ctx.set_operator(cairo::Operator::Over);
 
-    let radius = width.min(height) as f64 / 3.0;
+    let outer_radius = width.min(height) as f64 / 4.0;
+    let inner_radius = outer_radius / 2.0;
     let center_x = width as f64 / 2.0;
     let center_y = height as f64 / 2.0;
 
     ctx.set_source_rgba(1.0, 0.0, 0.5, 0.3);
-    ctx.arc(center_x, center_y, radius, 0.0, std::f64::consts::TAU);
+    ctx.new_path();
+    ctx.arc(center_x, center_y, outer_radius, 0.0, std::f64::consts::TAU);
+    ctx.arc_negative(center_x, center_y, inner_radius, 0.0, -std::f64::consts::TAU);
     ctx.fill().unwrap();
 }
 
@@ -48,11 +54,11 @@ fn build_circle(app: &Application) {
         .application(app)
         .decorated(false)
         .resizable(false)
-        .title("Test")
         .child(&area)
-        .default_width(400)
-        .default_height(400)
+        .default_width(WIN_W)
+        .default_height(WIN_H)
         .build();
 
+    win.fullscreen();
     win.present();
 }
