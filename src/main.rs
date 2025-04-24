@@ -12,8 +12,8 @@ mod input_check;
 const WIN_W: i32 = 1920;
 const WIN_H: i32 = 1080;
 
-const COLOR_BLUE: Color = Color::new(100, 149, 237, 77);
-const COLOR_MAGENTA: Color = Color::new(255, 0, 128, 77);
+const COLOR_TRANSLUCENT_BLUE: Color = Color::new(100, 149, 237, 77);
+const COLOR_DARK_BLUE: Color = Color::new(31, 102, 229, 220);
 
 struct Interface;
 
@@ -48,7 +48,7 @@ fn main() {
         let mut d = rl.begin_drawing(&thread);
         d.clear_background(Color::new(0, 0, 0, 0));
 
-        draw_ring_menu(&mut d, screen_h, screen_w, 5, Some(5));
+        draw_ring_menu(&mut d, screen_h, screen_w, 5, Some(4));
     }
 }
 
@@ -73,8 +73,19 @@ fn draw_ring_menu(
         let end_angle = start_angle + angle_per_segment;
 
         let color = match highlight {
-            Some(h_idx) if idx == h_idx => COLOR_MAGENTA,
-            _ => COLOR_BLUE
+            Some(h_idx) => {
+                assert!(
+                    h_idx <= segments,
+                    "hightlight index {} out of bounds for segments {}",
+                    h_idx, segments
+                );
+                if h_idx == idx {
+                    COLOR_DARK_BLUE
+                } else {
+                    COLOR_TRANSLUCENT_BLUE
+                }
+            },
+            None => COLOR_TRANSLUCENT_BLUE
         };
 
         d.draw_ring(
