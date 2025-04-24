@@ -38,7 +38,7 @@ impl LibinputInterface for Interface {
 fn main() {
     let app = Application::builder().application_id(APP_ID).build();
     app.connect_startup(|_| { load_css() });
-    app.connect_activate(build_circle);
+    app.connect_activate(build_menu);
     app.run();
 }
 
@@ -87,7 +87,7 @@ fn draw_arrowhead(ctx: &cairo::Context, center_x: f64, center_y: f64, radius: f6
     ctx.stroke().unwrap();
 }
 
-fn draw_circle(ctx: &cairo::Context, width: i32, height: i32, radius: f64) {
+fn draw_ring(ctx: &cairo::Context, width: i32, height: i32, radius: f64, deg: f64) {
     ctx.set_operator(cairo::Operator::Clear);
     ctx.paint().unwrap();
     ctx.set_operator(cairo::Operator::Over);
@@ -104,15 +104,15 @@ fn draw_circle(ctx: &cairo::Context, width: i32, height: i32, radius: f64) {
     ctx.arc_negative(center_x, center_y, inner_radius, 0.0, -TAU);
     ctx.fill().unwrap();
 
-    draw_arrowhead(ctx, center_x, center_y, inner_radius, 45.0, 50.0);
+    draw_arrowhead(ctx, center_x, center_y, inner_radius, deg, 50.0);
 }
 
-fn build_circle(app: &Application) {
+fn build_menu(app: &Application) {
     let area = DrawingArea::new();
 
     area.set_draw_func(move |_, ctx, w, h| {
         let radius = w.min(h) as f64 / 5.0;
-        draw_circle(ctx, w, h, radius);
+        draw_ring(ctx, w, h, radius, 45.0);
     });
 
     let win = ApplicationWindow::builder()
