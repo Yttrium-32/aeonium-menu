@@ -2,13 +2,38 @@ use gtk::prelude::*;
 use gtk::cairo;
 use gtk::{Application, ApplicationWindow, DrawingArea};
 
+use input::LibinputInterface;
+use std::fs::{ File, OpenOptions };
+use std::os::unix::{ fs::OpenOptionsExt, io::OwnedFd };
+use nix::libc::{ O_RDONLY, O_RDWR, O_WRONLY };
+
 use std::path::Path;
 use std::f64::consts::{ TAU, PI };
+
+mod input_check;
 
 const WIN_W: i32 = 1920;
 const WIN_H: i32 = 1080;
 
 const APP_ID: &str = "yttrium32.aeonium.menu";
+
+struct Interface;
+
+#[allow(clippy::bad_bit_mask)]
+impl LibinputInterface for Interface {
+    fn open_restricted(&mut self, path: &Path, flags: i32) -> Result<OwnedFd, i32> {
+        OpenOptions::new()
+            .custom_flags(flags)
+            .read((flags & O_RDONLY != 0) | (flags & O_RDWR != 0))
+            .write((flags & O_WRONLY != 0) | (flags & O_RDWR != 0))
+            .open(path)
+            .map(|file| file.into())
+            .map_err(|err| err.raw_os_error().unwrap())
+    }
+    fn close_restricted(&mut self, fd: OwnedFd) {
+        drop(File::from(fd));
+    }
+}
 
 fn main() {
     let app = Application::builder().application_id(APP_ID).build();
