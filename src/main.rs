@@ -1,21 +1,19 @@
-use gtk::prelude::*;
-use gtk::cairo;
-use gtk::{Application, ApplicationWindow, DrawingArea};
+use raylib::prelude::*;
 
-use input::LibinputInterface;
+use ::input::LibinputInterface;
 use std::fs::{ File, OpenOptions };
 use std::os::unix::{ fs::OpenOptionsExt, io::OwnedFd };
 use nix::libc::{ O_RDONLY, O_RDWR, O_WRONLY };
 
 use std::path::Path;
-use std::f64::consts::{ TAU, PI };
 
 mod input_check;
 
 const WIN_W: i32 = 1920;
 const WIN_H: i32 = 1080;
 
-const APP_ID: &str = "yttrium32.aeonium.menu";
+const COLOR_BLUE: Color = Color::new(100, 149, 237, 77);
+const COLOR_MAGENTA: Color = Color::new(255, 0, 128, 77);
 
 struct Interface;
 
@@ -36,95 +34,42 @@ impl LibinputInterface for Interface {
 }
 
 fn main() {
-    let app = Application::builder().application_id(APP_ID).build();
-    app.connect_startup(|_| { load_css() });
-    app.connect_activate(build_menu);
-    app.run();
-}
-
-fn load_css() {
-    let provider = gtk::CssProvider::new();
-    provider.load_from_string("
-        window {
-            background-color: transparent;
-        }
-    ");
-
-    gtk::style_context_add_provider_for_display(
-        &gtk::gdk::Display::default().expect("Could not connect to a display."),
-        &provider,
-        gtk::STYLE_PROVIDER_PRIORITY_APPLICATION
-    );
-}
-
-fn draw_arrowhead(ctx: &cairo::Context, center_x: f64, center_y: f64, radius: f64, angle_deg: f64, size: f64) {
-    let offset_distance = 10.0;
-
-    let angle = (angle_deg - 90.0) * PI / 180.0;
-
-    let adjusted_radius = radius - offset_distance;
-
-    let tip_x = center_x + adjusted_radius * angle.cos();
-    let tip_y = center_y + adjusted_radius * angle.sin();
-
-    let left_x = center_x + (adjusted_radius - size) * angle.cos() - (size / 2.0) * angle.sin();
-    let left_y = center_y + (adjusted_radius - size) * angle.sin() + (size / 2.0) * angle.cos();
-
-    let right_x = center_x + (adjusted_radius - size) * angle.cos() + (size / 2.0) * angle.sin();
-    let right_y = center_y + (adjusted_radius - size) * angle.sin() - (size / 2.0) * angle.cos();
-
-    ctx.set_source_rgba(0.0, 0.0, 0.0, 1.0);
-    ctx.set_line_width(4.0);
-
-    ctx.new_path();
-
-    ctx.move_to(left_x, left_y);
-    ctx.line_to(tip_x, tip_y);
-
-    ctx.move_to(tip_x, tip_y);
-    ctx.line_to(right_x, right_y);
-
-    ctx.stroke().unwrap();
-}
-
-fn draw_ring(ctx: &cairo::Context, width: i32, height: i32, radius: f64, deg: f64) {
-    ctx.set_operator(cairo::Operator::Clear);
-    ctx.paint().unwrap();
-    ctx.set_operator(cairo::Operator::Over);
-
-    let outer_radius = radius;
-    let inner_radius = outer_radius / 1.8;
-
-    let center_x = width as f64 / 2.0;
-    let center_y = height as f64 / 2.0;
-
-    ctx.set_source_rgba(1.0, 0.0, 0.5, 0.3);
-    ctx.new_path();
-    ctx.arc(center_x, center_y, outer_radius, 0.0, TAU);
-    ctx.arc_negative(center_x, center_y, inner_radius, 0.0, -TAU);
-    ctx.fill().unwrap();
-
-    draw_arrowhead(ctx, center_x, center_y, inner_radius, deg, 50.0);
-}
-
-fn build_menu(app: &Application) {
-    let area = DrawingArea::new();
-
-    area.set_draw_func(move |_, ctx, w, h| {
-        let radius = w.min(h) as f64 / 5.0;
-        draw_ring(ctx, w, h, radius, 45.0);
-    });
-
-    let win = ApplicationWindow::builder()
-        .application(app)
-        .decorated(false)
-        .resizable(false)
-        .child(&area)
-        .default_width(WIN_W)
-        .default_height(WIN_H)
+    let (mut rl, thread) = raylib::init()
+        .size(WIN_W, WIN_H)
+        .title("Hello World!")
+        .transparent()
+        .undecorated()
         .build();
 
-    win.fullscreen();
-    win.present();
+    while !rl.window_should_close() {
+        let screen_w = rl.get_screen_width() as f32;
+        let screen_h = rl.get_screen_height() as f32;
+
+        let mut d = rl.begin_drawing(&thread);
+        d.clear_background(Color::new(0, 0, 0, 0));
+
+        draw_ring_menu(&mut d, screen_h, screen_w);
+    }
+}
+
+fn draw_ring_menu(
+    d: &mut RaylibDrawHandle,
+    screen_h: f32,
+    screen_w: f32,
+    //segments: u32
+) {
+    let center = Vector2::new(screen_w / 2.0, screen_h / 2.0);
+    let outer_radius = screen_h.min(screen_w) * 0.25;
+    let inner_radius = outer_radius * 0.75;
+
+    d.draw_ring(
+        center,
+        inner_radius,
+        outer_radius,
+        0.0,
+        360.0,
+        0,
+        COLOR_BLUE
+    );
 }
 
