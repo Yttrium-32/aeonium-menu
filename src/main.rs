@@ -1,11 +1,7 @@
+use std::collections::HashSet;
+
+use input_check::key_bind_pressed;
 use raylib::prelude::*;
-
-use ::input::LibinputInterface;
-use std::fs::{ File, OpenOptions };
-use std::os::unix::{ fs::OpenOptionsExt, io::OwnedFd };
-use nix::libc::{ O_RDONLY, O_RDWR, O_WRONLY };
-
-use std::path::Path;
 
 mod input_check;
 
@@ -15,25 +11,11 @@ const WIN_H: i32 = 1080;
 const COLOR_TRANSLUCENT_BLUE: Color = Color::new(100, 149, 237, 77);
 const COLOR_DARK_BLUE: Color = Color::new(31, 102, 229, 220);
 
-struct Interface;
-
-#[allow(clippy::bad_bit_mask)]
-impl LibinputInterface for Interface {
-    fn open_restricted(&mut self, path: &Path, flags: i32) -> Result<OwnedFd, i32> {
-        OpenOptions::new()
-            .custom_flags(flags)
-            .read((flags & O_RDONLY != 0) | (flags & O_RDWR != 0))
-            .write((flags & O_WRONLY != 0) | (flags & O_RDWR != 0))
-            .open(path)
-            .map(|file| file.into())
-            .map_err(|err| err.raw_os_error().unwrap())
-    }
-    fn close_restricted(&mut self, fd: OwnedFd) {
-        drop(File::from(fd));
-    }
-}
-
 fn main() {
+    let modifiers: HashSet<KeyboardKey> = vec![KeyboardKey::KEY_LEFT_SUPER].into_iter().collect();
+    let menu_up_key: KeyboardKey = KeyboardKey::KEY_Z;
+    let menu_down_key: KeyboardKey = KeyboardKey::KEY_X;
+
     let (mut rl, thread) = raylib::init()
         .size(WIN_W, WIN_H)
         .title("Hello World!")
@@ -47,6 +29,14 @@ fn main() {
 
         let mut d = rl.begin_drawing(&thread);
         d.clear_background(Color::new(0, 0, 0, 0));
+
+        if key_bind_pressed(&modifiers, menu_up_key, &mut d) {
+            println!("INFO: Move menu up!");
+        }
+
+        if key_bind_pressed(&modifiers, menu_down_key, &mut d) {
+            println!("INFO: Move menu down!");
+        }
 
         draw_ring_menu(&mut d, screen_h, screen_w, 5, Some(4));
     }
