@@ -1,9 +1,8 @@
 use std::collections::HashSet;
-
-use input_check::key_bind_pressed;
 use raylib::prelude::*;
 
 mod input_check;
+use input_check::{key_bind_pressed, mouse_wheel_scrolled};
 
 const WIN_W: i32 = 1920;
 const WIN_H: i32 = 1080;
@@ -35,7 +34,9 @@ fn main() {
         let mut d = rl.begin_drawing(&thread);
         d.clear_background(Color::new(0, 0, 0, 0));
 
-        if key_bind_pressed(&modifiers, menu_up_key, &d) {
+        let wheel_movement = mouse_wheel_scrolled(&d);
+
+        if key_bind_pressed(&modifiers, menu_up_key, &d) || wheel_movement == 1{
             wheel_idx = match wheel_idx {
                 Some(val) => Some((val + 1) % segments),
                 None => Some(0)
@@ -43,7 +44,7 @@ fn main() {
             println!("INFO: Move menu up!");
         }
 
-        if key_bind_pressed(&modifiers, menu_down_key, &d) {
+        if key_bind_pressed(&modifiers, menu_down_key, &d) || wheel_movement == -1{
             wheel_idx = match wheel_idx {
                 Some(val) => Some((val + segments - 1) % segments),
                 None => Some(segments - 1),
