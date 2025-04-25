@@ -35,7 +35,7 @@ fn main() {
         let mut d = rl.begin_drawing(&thread);
         d.clear_background(Color::new(0, 0, 0, 0));
 
-        if key_bind_pressed(&modifiers, menu_up_key, &mut d) {
+        if key_bind_pressed(&modifiers, menu_up_key, &d) {
             wheel_idx = match wheel_idx {
                 Some(val) => Some((val + 1) % segments),
                 None => Some(0)
@@ -43,7 +43,7 @@ fn main() {
             println!("INFO: Move menu up!");
         }
 
-        if key_bind_pressed(&modifiers, menu_down_key, &mut d) {
+        if key_bind_pressed(&modifiers, menu_down_key, &d) {
             wheel_idx = match wheel_idx {
                 Some(val) => Some((val + segments - 1) % segments),
                 None => Some(segments - 1),
