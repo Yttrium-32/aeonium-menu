@@ -16,12 +16,17 @@ fn main() {
     let menu_up_key: KeyboardKey = KeyboardKey::KEY_Z;
     let menu_down_key: KeyboardKey = KeyboardKey::KEY_X;
 
+    let mut wheel_idx: Option<u32> = None;
+    let segments: u32 = 5;
+
     let (mut rl, thread) = raylib::init()
         .size(WIN_W, WIN_H)
         .title("Hello World!")
         .transparent()
         .undecorated()
         .build();
+
+    rl.set_target_fps(30);
 
     while !rl.window_should_close() {
         let screen_w = rl.get_screen_width() as f32;
@@ -31,14 +36,22 @@ fn main() {
         d.clear_background(Color::new(0, 0, 0, 0));
 
         if key_bind_pressed(&modifiers, menu_up_key, &mut d) {
+            wheel_idx = match wheel_idx {
+                Some(val) => Some((val + 1) % segments),
+                None => Some(0)
+            };
             println!("INFO: Move menu up!");
         }
 
         if key_bind_pressed(&modifiers, menu_down_key, &mut d) {
+            wheel_idx = match wheel_idx {
+                Some(val) => Some((val + segments - 1) % segments),
+                None => Some(segments - 1),
+            };
             println!("INFO: Move menu down!");
         }
 
-        draw_ring_menu(&mut d, screen_h, screen_w, 5, Some(4));
+        draw_ring_menu(&mut d, screen_h, screen_w, segments, wheel_idx);
     }
 }
 
