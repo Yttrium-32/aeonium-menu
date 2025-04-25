@@ -1,19 +1,27 @@
-use std::collections::HashSet;
+use input::event::pointer::PointerScrollEvent;
+use input::event::PointerEvent;
+use input::event::pointer;
 
 use input::event::keyboard::{ KeyboardEventTrait, KeyState };
-use input::{ Libinput, LibinputInterface };
+use input::Libinput;
 
-pub fn init_libinput<I: 'static + LibinputInterface>(interface: I, seat: &str) -> Libinput {
-    let mut input = Libinput::new_from_path(interface);
-    input.udev_assign_seat(seat).expect("Failed to assign seat");
-    input
+use std::collections::HashSet;
+
+pub fn mouse_wheel_scrolled(input: &mut Libinput) {
+    for event in input {
+        if let input::Event::Pointer(PointerEvent::ScrollWheel(wheel_event)) = event {
+            let vert_scroll = wheel_event.scroll_value(pointer::Axis::Vertical);
+            println!("Vertical Scroll: {}", vert_scroll);
+            println!();
+        }
+    }
 }
 
-pub fn keys_fully_pressed(key_arr: Vec<u32>, mut input: Libinput) -> bool {
+pub fn keys_fully_pressed(key_arr: Vec<u32>, input: &mut Libinput) -> bool {
     let mut pressed_keys = HashSet::<u32>::new();
     let target_keys: HashSet<u32> = key_arr.into_iter().collect();
 
-    for event in &mut input {
+    for event in input {
         if let input::Event::Keyboard(key_event) = event {
             let key = key_event.key();
             let state = key_event.key_state();
