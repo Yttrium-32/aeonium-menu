@@ -11,9 +11,9 @@ const COLOR_TRANSLUCENT_BLUE: Color = Color::new(100, 149, 237, 77);
 const COLOR_DARK_BLUE: Color = Color::new(31, 102, 229, 220);
 
 fn main() {
-    let modifiers: HashSet<KeyboardKey> = vec![KeyboardKey::KEY_LEFT_SUPER].into_iter().collect();
-    let menu_up_key: KeyboardKey = KeyboardKey::KEY_Z;
-    let menu_down_key: KeyboardKey = KeyboardKey::KEY_X;
+    let modifiers: HashSet<KeyboardKey> = vec![KeyboardKey::KEY_LEFT_CONTROL, KeyboardKey::KEY_LEFT_SHIFT].into_iter().collect();
+    let menu_up_key: KeyboardKey = KeyboardKey::KEY_F10;
+    let menu_down_key: KeyboardKey = KeyboardKey::KEY_F9;
 
     let mut wheel_idx: Option<u32> = None;
     let segments: u32 = 5;
@@ -36,7 +36,7 @@ fn main() {
 
         let wheel_movement = mouse_wheel_scrolled(&d);
 
-        if key_bind_pressed(&modifiers, menu_up_key, &d) || wheel_movement == 1{
+        if key_bind_pressed(&modifiers, menu_up_key, &d) || wheel_movement == -1 {
             wheel_idx = match wheel_idx {
                 Some(val) => Some((val + 1) % segments),
                 None => Some(0)
@@ -44,7 +44,7 @@ fn main() {
             println!("INFO: Move menu up!");
         }
 
-        if key_bind_pressed(&modifiers, menu_down_key, &d) || wheel_movement == -1{
+        if key_bind_pressed(&modifiers, menu_down_key, &d) || wheel_movement == 1 {
             wheel_idx = match wheel_idx {
                 Some(val) => Some((val + segments - 1) % segments),
                 None => Some(segments - 1),
