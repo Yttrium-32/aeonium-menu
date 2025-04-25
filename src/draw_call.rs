@@ -1,4 +1,7 @@
-use raylib::prelude::*;
+use raylib::core::color::Color;
+use raylib::core::drawing::RaylibDraw;
+use raylib::drawing::RaylibDrawHandle;
+use raylib::math::Vector2;
 
 const COLOR_TRANSLUCENT_BLUE: Color = Color::new(100, 149, 237, 77);
 const COLOR_DARK_BLUE: Color = Color::new(31, 102, 229, 220);
