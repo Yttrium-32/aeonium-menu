@@ -34,7 +34,7 @@ fn main() {
         let mut d = rl.begin_drawing(&thread);
         d.clear_background(Color::new(0, 0, 0, 0));
 
-        let wheel_movement = mouse_wheel_scrolled(&d);
+        let wheel_movement = mouse_wheel_scrolled(&modifiers, &d);
 
         if key_bind_pressed(&modifiers, menu_up_key, &d) || wheel_movement == -1 {
             wheel_idx = match wheel_idx {
