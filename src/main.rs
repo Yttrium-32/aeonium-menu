@@ -1,3 +1,4 @@
+use directories::ProjectDirs;
 use std::collections::HashSet;
 use raylib::prelude::*;
 
@@ -7,10 +8,17 @@ use draw_call::draw_ring_menu;
 mod input_check;
 use input_check::{key_bind_pressed, mouse_wheel_scrolled};
 
+mod desktop_file;
+use desktop_file::get_shortcut_files;
+
 const WIN_W: i32 = 1920;
 const WIN_H: i32 = 1080;
 
 fn main() {
+    let proj_dirs = ProjectDirs::from("", "", "aeonium-menu").expect("No home directory found");
+    let config_dir = proj_dirs.config_dir();
+    println!("INFO: {config_dir:?}");
+
     let modifiers: HashSet<KeyboardKey> = vec![KeyboardKey::KEY_LEFT_CONTROL, KeyboardKey::KEY_LEFT_SHIFT].into_iter().collect();
     let menu_up_key: KeyboardKey = KeyboardKey::KEY_F10;
     let menu_down_key: KeyboardKey = KeyboardKey::KEY_F9;
@@ -26,6 +34,9 @@ fn main() {
         .build();
 
     rl.set_target_fps(30);
+
+    let shortcut_files = get_shortcut_files(config_dir, &mut rl, &thread);
+    println!("{:?}", shortcut_files);
 
     while !rl.window_should_close() {
         let screen_w = rl.get_screen_width() as f32;
