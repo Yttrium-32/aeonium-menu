@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 directories = "6.0.0"
+freedesktop-icons = "0.4.0"
 freedesktop_entry_parser = "1.3.0"
 nix = { version = "0.29.0", features = ["poll"] }
 raylib = "5.5.1"
