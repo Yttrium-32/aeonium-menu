@@ -1,5 +1,6 @@
 use std::path::{Path, PathBuf};
 use freedesktop_entry_parser::parse_entry;
+use freedesktop_icons::lookup;
 use raylib::{texture::Texture2D, RaylibHandle, RaylibThread};
 
 #[derive(Debug)]
@@ -15,11 +16,11 @@ pub fn get_shortcut_files(config_dir: &Path, rl: &mut RaylibHandle, thread: &Ray
 
     let shortcuts_dir = config_dir.join("shortcuts");
     if !shortcuts_dir.exists() {
-        panic!("Shortcuts directory does not exist: {}", shortcuts_dir.display());
+        panic!("ERROR: Shortcuts directory does not exist: {}", shortcuts_dir.display());
     }
 
     let entries = std::fs::read_dir(&shortcuts_dir)
-        .expect("Failed to read shortcuts directory");
+        .expect("ERROR: Failed to read shortcuts directory");
 
     let desktop_paths: Vec<_> = entries.flatten()
         .filter(|entry| {
@@ -29,15 +30,16 @@ pub fn get_shortcut_files(config_dir: &Path, rl: &mut RaylibHandle, thread: &Ray
         .collect();
 
     if desktop_paths.is_empty() {
-        panic!("No desktop files found in directory: {}", shortcuts_dir.display());
+        panic!("ERROR: No desktop files found in directory: {}", shortcuts_dir.display());
     }
 
     for path in desktop_paths {
         match parse_shortcut_file(&path, rl, thread) {
             Ok(desktop_file) => desktop_files.push(desktop_file),
-            Err(e) => eprintln!("Failed to parse desktop file {}: {}", path.display(), e),
+            Err(e) => eprintln!("WARNING: Failed to parse desktop file {}: {}", path.display(), e),
         }
     }
+
     desktop_files
 }
 
@@ -59,14 +61,7 @@ fn parse_shortcut_file(file_path: impl AsRef<Path>, rl: &mut RaylibHandle, threa
         None => return Err("No `Exec` section found in file".to_string())
     };
 
-    // TODO: Use the freedesktop standard to find icons
-    let icon = match desktop_section.attr("Icon") {
-        Some(val) => match rl.load_texture(thread, val) {
-            Ok(texture) => texture,
-            Err(err) => return Err(err.to_string())
-        },
-        None => todo!("Load a default icon")
-    };
+    let icon = load_icon(rl, thread, desktop_section.attr("Icon"), file_path.as_ref())?;
 
     Ok(DesktopFile {
         name,
@@ -76,3 +71,52 @@ fn parse_shortcut_file(file_path: impl AsRef<Path>, rl: &mut RaylibHandle, threa
     })
 }
 
+fn load_icon(rl: &mut RaylibHandle, thread: &RaylibThread, icon_field: Option<&str>, file_path: &Path) -> Result<Texture2D, String> {
+    let field = match icon_field {
+        Some(field) => field,
+        None => {
+            eprintln!("WARNING: No `Icon` field in {}", file_path.display());
+            eprintln!("WARNING: Loading default icon");
+            return load_default_icon(rl, thread);
+        }
+    };
+
+    let icon_path = match lookup(field).find() {
+        Some(icon_path) => icon_path,
+        None => {
+            eprintln!("WARNING: Failed to find icon path for {}", file_path.display());
+            eprintln!("WARNING: Loading default icon");
+            return load_default_icon(rl, thread);
+        }
+    };
+
+    let path_str = match icon_path.to_str() {
+        Some(path_str) => path_str,
+        None => {
+            eprintln!("WARNING: Failed to icon path to str for {}", file_path.display());
+            eprintln!("WARNING: Loading default icon");
+            return load_default_icon(rl, thread);
+        }
+    };
+
+    match rl.load_texture(thread, path_str) {
+        Ok(texture) => Ok(texture),
+        Err(_) => {
+            eprintln!("WARNING: Failed to load icon texture for {}", file_path.display());
+            eprintln!("WARNING: Loading default icon");
+            load_default_icon(rl, thread)
+        }
+    }
+}
+
+#[inline(always)]
+fn load_default_icon(rl: &mut RaylibHandle, thread: &RaylibThread) -> Result<Texture2D, String> {
+    let default_icon_path = Path::new("./resources/default.png");
+    match rl.load_texture(
+        thread,
+        default_icon_path.to_str().expect("Failed to get default icon path")
+    ) {
+        Ok(texture) => Ok(texture),
+        Err(err) => panic!("Failed to load default texture: {}", err)
+    }
+}
