@@ -23,9 +23,6 @@ fn main() {
     let menu_up_key: KeyboardKey = KeyboardKey::KEY_F10;
     let menu_down_key: KeyboardKey = KeyboardKey::KEY_F9;
 
-    let mut wheel_idx: Option<u32> = None;
-    let segments: u32 = 5;
-
     let (mut rl, thread) = raylib::init()
         .size(WIN_W, WIN_H)
         .title("Hello World!")
@@ -36,7 +33,8 @@ fn main() {
     rl.set_target_fps(30);
 
     let shortcut_files = get_shortcut_files(config_dir, &mut rl, &thread);
-    println!("{:?}", shortcut_files);
+    let segments: usize = shortcut_files.len();
+    let mut seg_highlight_idx: Option<usize> = None;
 
     while !rl.window_should_close() {
         let screen_w = rl.get_screen_width() as f32;
@@ -48,7 +46,7 @@ fn main() {
         let wheel_movement = mouse_wheel_scrolled(&modifiers, &d);
 
         if key_bind_pressed(&modifiers, menu_up_key, &d) || wheel_movement == -1 {
-            wheel_idx = match wheel_idx {
+            seg_highlight_idx = match seg_highlight_idx {
                 Some(val) => Some((val + 1) % segments),
                 None => Some(0)
             };
@@ -56,14 +54,14 @@ fn main() {
         }
 
         if key_bind_pressed(&modifiers, menu_down_key, &d) || wheel_movement == 1 {
-            wheel_idx = match wheel_idx {
+            seg_highlight_idx = match seg_highlight_idx {
                 Some(val) => Some((val + segments - 1) % segments),
                 None => Some(segments - 1),
             };
             println!("INFO: Move menu down!");
         }
 
-        draw_ring_menu(&mut d, screen_h, screen_w, segments, wheel_idx);
+        draw_ring_menu(&mut d, screen_h, screen_w, seg_highlight_idx, &shortcut_files);
     }
 }
 
