@@ -7,7 +7,7 @@ pub struct DesktopFile {
     name: String,
     exec_path: PathBuf,
     exec_args: Vec<String>,
-    icon: Texture2D
+    pub icon: Texture2D
 }
 
 pub fn get_shortcut_files(config_dir: &Path, rl: &mut RaylibHandle, thread: &RaylibThread) -> Vec<DesktopFile> {
@@ -59,6 +59,7 @@ fn parse_shortcut_file(file_path: impl AsRef<Path>, rl: &mut RaylibHandle, threa
         None => return Err("No `Exec` section found in file".to_string())
     };
 
+    // TODO: Use the freedesktop standard to find icons
     let icon = match desktop_section.attr("Icon") {
         Some(val) => match rl.load_texture(thread, val) {
             Ok(texture) => texture,
