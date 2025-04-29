@@ -25,7 +25,7 @@ fn main() {
 
     let (mut rl, thread) = raylib::init()
         .size(WIN_W, WIN_H)
-        .title("Hello World!")
+        .title("Aeonium")
         .transparent()
         .undecorated()
         .build();
@@ -50,7 +50,6 @@ fn main() {
                 Some(val) => Some((val + 1) % segments),
                 None => Some(0)
             };
-            println!("INFO: Move menu up!");
         }
 
         if key_bind_pressed(&modifiers, menu_down_key, &d) || wheel_movement == 1 {
@@ -58,7 +57,6 @@ fn main() {
                 Some(val) => Some((val + segments - 1) % segments),
                 None => Some(segments - 1),
             };
-            println!("INFO: Move menu down!");
         }
 
         draw_ring_menu(&mut d, screen_h, screen_w, seg_highlight_idx, &shortcut_files);
