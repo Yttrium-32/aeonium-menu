@@ -1,7 +1,13 @@
+use std::ffi::CString;
 use std::path::{Path, PathBuf};
+
 use freedesktop_entry_parser::parse_entry;
 use freedesktop_icons::lookup;
+
+use raylib::ffi::{Image, LoadImageFromMemory, LoadTextureFromImage, UnloadImage};
 use raylib::{texture::Texture2D, RaylibHandle, RaylibThread};
+
+static DEFAULT_ICON_DATA: &[u8] = include_bytes!("../resources/default.png");
 
 #[derive(Debug)]
 pub struct DesktopFile {
@@ -77,7 +83,7 @@ fn load_icon(rl: &mut RaylibHandle, thread: &RaylibThread, icon_field: Option<&s
         None => {
             eprintln!("WARNING: No `Icon` field in {}", file_path.display());
             eprintln!("WARNING: Loading default icon");
-            return load_default_icon(rl, thread);
+            return load_default_icon();
         }
     };
 
@@ -86,7 +92,7 @@ fn load_icon(rl: &mut RaylibHandle, thread: &RaylibThread, icon_field: Option<&s
         None => {
             eprintln!("WARNING: Failed to find icon path for {}", file_path.display());
             eprintln!("WARNING: Loading default icon");
-            return load_default_icon(rl, thread);
+            return load_default_icon();
         }
     };
 
@@ -95,7 +101,7 @@ fn load_icon(rl: &mut RaylibHandle, thread: &RaylibThread, icon_field: Option<&s
         None => {
             eprintln!("WARNING: Failed to icon path to str for {}", file_path.display());
             eprintln!("WARNING: Loading default icon");
-            return load_default_icon(rl, thread);
+            return load_default_icon();
         }
     };
 
@@ -104,19 +110,31 @@ fn load_icon(rl: &mut RaylibHandle, thread: &RaylibThread, icon_field: Option<&s
         Err(_) => {
             eprintln!("WARNING: Failed to load icon texture for {}", file_path.display());
             eprintln!("WARNING: Loading default icon");
-            load_default_icon(rl, thread)
+            load_default_icon()
         }
     }
 }
 
 #[inline(always)]
-fn load_default_icon(rl: &mut RaylibHandle, thread: &RaylibThread) -> Result<Texture2D, String> {
-    let default_icon_path = Path::new("./resources/default.png");
-    match rl.load_texture(
-        thread,
-        default_icon_path.to_str().expect("Failed to get default icon path")
-    ) {
-        Ok(texture) => Ok(texture),
-        Err(err) => panic!("Failed to load default texture: {}", err)
+fn load_default_icon() -> Result<Texture2D, String> {
+    let extension = CString::new(".png")
+        .map_err(|_| "Failed to convert file extension to CString".to_string())?;
+
+    let image: Image = unsafe {
+        LoadImageFromMemory(
+            extension.as_ptr(),
+            DEFAULT_ICON_DATA.as_ptr(),
+            DEFAULT_ICON_DATA.len() as i32
+        )
+    };
+
+    if image.data.is_null() {
+        return Err("Failed to default icon from bytes".to_string());
+    }
+
+    unsafe {
+        let raw_texture = LoadTextureFromImage(image);
+        UnloadImage(image);
+        Ok(Texture2D::from_raw(raw_texture))
     }
 }
