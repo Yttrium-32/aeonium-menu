@@ -50,7 +50,6 @@ fn main() {
             &mut seg_highlight_idx
         );
     }
-
 }
 
 #[inline]
@@ -63,9 +62,6 @@ fn render_loop(
     segments: usize,
     seg_highlight_idx: &mut Option<usize>
 ) {
-        let screen_w = rl.get_screen_width() as f32;
-        let screen_h = rl.get_screen_height() as f32;
-
         let mut d = rl.begin_drawing(thread);
         d.clear_background(Color::new(0, 0, 0, 0));
 
@@ -85,5 +81,5 @@ fn render_loop(
             };
         }
 
-        draw_ring_menu(&mut d, screen_h, screen_w, *seg_highlight_idx, shortcut_files);
+        draw_ring_menu(&mut d, WIN_H as f32, WIN_W as f32, *seg_highlight_idx, shortcut_files);
 }
