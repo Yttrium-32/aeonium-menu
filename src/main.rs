@@ -3,11 +3,11 @@ use raylib::prelude::*;
 use std::collections::{HashMap, HashSet};
 
 use crate::ring_menu::draw;
-use crate::input_check::{key_bind_pressed, mouse_wheel_scrolled};
+use crate::utils::{key_bind_pressed, mouse_wheel_scrolled};
 use crate::shortcut_parser::{DesktopFile, get_shortcut_files};
 
 mod ring_menu;
-mod input_check;
+mod utils;
 mod shortcut_parser;
 
 const WIN_W: i32 = 1920;
