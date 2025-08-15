@@ -1,15 +1,14 @@
 use directories::ProjectDirs;
-use std::collections::{HashMap, HashSet};
 use raylib::prelude::*;
+use std::collections::{HashMap, HashSet};
+
+use crate::draw_call::draw_ring_menu;
+use crate::input_check::{key_bind_pressed, mouse_wheel_scrolled};
+use crate::shortcut_parser::{DesktopFile, get_shortcut_files};
 
 mod draw_call;
-use draw_call::draw_ring_menu;
-
 mod input_check;
-use input_check::{key_bind_pressed, mouse_wheel_scrolled};
-
-mod desktop_file;
-use desktop_file::{get_shortcut_files, DesktopFile};
+mod shortcut_parser;
 
 const WIN_W: i32 = 1920;
 const WIN_H: i32 = 1080;
@@ -19,11 +18,12 @@ fn main() {
     let config_dir = proj_dirs.config_dir();
     println!("INFO: {config_dir:?}");
 
-    let modifiers: HashSet<KeyboardKey> = vec![KeyboardKey::KEY_LEFT_CONTROL, KeyboardKey::KEY_LEFT_SHIFT].into_iter().collect();
-    let menu_control_keys: HashMap<&str, KeyboardKey> = HashMap::from([
-        ("up", KeyboardKey::KEY_F10),
-        ("down", KeyboardKey::KEY_F9)
-    ]);
+    let modifiers: HashSet<KeyboardKey> =
+        vec![KeyboardKey::KEY_LEFT_CONTROL, KeyboardKey::KEY_LEFT_SHIFT]
+            .into_iter()
+            .collect();
+    let menu_control_keys: HashMap<&str, KeyboardKey> =
+        HashMap::from([("up", KeyboardKey::KEY_F10), ("down", KeyboardKey::KEY_F9)]);
 
     let (mut rl, thread) = raylib::init()
         .size(WIN_W, WIN_H)
@@ -47,7 +47,7 @@ fn main() {
             &menu_control_keys,
             &shortcut_files,
             segments,
-            &mut seg_highlight_idx
+            &mut seg_highlight_idx,
         );
     }
 }
@@ -60,26 +60,32 @@ fn render_loop(
     menu_control_keys: &HashMap<&str, KeyboardKey>,
     shortcut_files: &[DesktopFile],
     segments: usize,
-    seg_highlight_idx: &mut Option<usize>
+    seg_highlight_idx: &mut Option<usize>,
 ) {
-        let mut d = rl.begin_drawing(thread);
-        d.clear_background(Color::new(0, 0, 0, 0));
+    let mut d = rl.begin_drawing(thread);
+    d.clear_background(Color::new(0, 0, 0, 0));
 
-        let wheel_movement = mouse_wheel_scrolled(modifiers, &d);
+    let wheel_movement = mouse_wheel_scrolled(modifiers, &d);
 
-        if key_bind_pressed(modifiers, menu_control_keys["up"], &d) || wheel_movement == -1 {
-            *seg_highlight_idx = match *seg_highlight_idx {
-                Some(val) => Some((val + 1) % segments),
-                None => Some(0),
-            };
-        }
+    if key_bind_pressed(modifiers, menu_control_keys["up"], &d) || wheel_movement == -1 {
+        *seg_highlight_idx = match *seg_highlight_idx {
+            Some(val) => Some((val + 1) % segments),
+            None => Some(0),
+        };
+    }
 
-        if key_bind_pressed(modifiers, menu_control_keys["down"], &d) || wheel_movement == 1 {
-            *seg_highlight_idx = match *seg_highlight_idx {
-                Some(val) => Some((val + segments - 1) % segments),
-                None => Some(segments - 1),
-            };
-        }
+    if key_bind_pressed(modifiers, menu_control_keys["down"], &d) || wheel_movement == 1 {
+        *seg_highlight_idx = match *seg_highlight_idx {
+            Some(val) => Some((val + segments - 1) % segments),
+            None => Some(segments - 1),
+        };
+    }
 
-        draw_ring_menu(&mut d, WIN_H as f32, WIN_W as f32, *seg_highlight_idx, shortcut_files);
+    draw_ring_menu(
+        &mut d,
+        WIN_H as f32,
+        WIN_W as f32,
+        *seg_highlight_idx,
+        shortcut_files,
+    );
 }

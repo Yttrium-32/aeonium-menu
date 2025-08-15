@@ -1,10 +1,11 @@
-use crate::desktop_file::DesktopFile;
-use raylib::prelude::RaylibTexture2D;
-use raylib::texture::Texture2D;
 use raylib::core::color::Color;
 use raylib::core::drawing::RaylibDraw;
 use raylib::drawing::RaylibDrawHandle;
 use raylib::math::{Rectangle, Vector2};
+use raylib::prelude::RaylibTexture2D;
+use raylib::texture::Texture2D;
+
+use crate::shortcut_parser::DesktopFile;
 
 const COLOR_TRANSLUCENT_BLUE: Color = Color::new(100, 149, 237, 77);
 const COLOR_DARK_BLUE: Color = Color::new(31, 102, 229, 220);
@@ -14,7 +15,7 @@ pub fn draw_ring_menu(
     screen_h: f32,
     screen_w: f32,
     highlight: Option<usize>,
-    shortcut_files: &[DesktopFile]
+    shortcut_files: &[DesktopFile],
 ) {
     let segments = shortcut_files.len();
 
@@ -35,15 +36,17 @@ pub fn draw_ring_menu(
             Some(h_idx) => {
                 assert!(
                     h_idx <= segments,
-                    "hightlight index {} out of bounds for segments {}", h_idx, segments
+                    "hightlight index {} out of bounds for segments {}",
+                    h_idx,
+                    segments
                 );
                 if h_idx == idx {
                     COLOR_DARK_BLUE
                 } else {
                     COLOR_TRANSLUCENT_BLUE
                 }
-            },
-            None => COLOR_TRANSLUCENT_BLUE
+            }
+            None => COLOR_TRANSLUCENT_BLUE,
         };
 
         d.draw_ring(
@@ -53,16 +56,17 @@ pub fn draw_ring_menu(
             start_angle,
             end_angle,
             0,
-            color
+            color,
         );
 
-        draw_icon(d,
+        draw_icon(
+            d,
             center,
             inner_radius,
             outer_radius,
             start_angle,
             end_angle,
-            &shortcut.icon
+            &shortcut.icon,
         );
 
         start_angle = end_angle + gap_angle;
@@ -113,6 +117,6 @@ fn draw_icon(
         dest_rect,
         Vector2::new(0.0, 0.0),
         0.0,
-        Color::WHITE
+        Color::WHITE,
     );
 }
