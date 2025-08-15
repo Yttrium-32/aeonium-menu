@@ -2,11 +2,11 @@ use directories::ProjectDirs;
 use raylib::prelude::*;
 use std::collections::{HashMap, HashSet};
 
-use crate::draw_call::draw_ring_menu;
+use crate::ring_menu::draw;
 use crate::input_check::{key_bind_pressed, mouse_wheel_scrolled};
 use crate::shortcut_parser::{DesktopFile, get_shortcut_files};
 
-mod draw_call;
+mod ring_menu;
 mod input_check;
 mod shortcut_parser;
 
@@ -81,7 +81,7 @@ fn render_loop(
         };
     }
 
-    draw_ring_menu(
+    draw(
         &mut d,
         WIN_H as f32,
         WIN_W as f32,

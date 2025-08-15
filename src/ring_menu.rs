@@ -10,7 +10,7 @@ use crate::shortcut_parser::DesktopFile;
 const COLOR_TRANSLUCENT_BLUE: Color = Color::new(100, 149, 237, 77);
 const COLOR_DARK_BLUE: Color = Color::new(31, 102, 229, 220);
 
-pub fn draw_ring_menu(
+pub fn draw(
     d: &mut RaylibDrawHandle,
     screen_h: f32,
     screen_w: f32,
