@@ -12,7 +12,7 @@ pub struct DesktopFile {
     pub icon: Texture2D,
 }
 
-pub fn get_shortcut_files(
+pub fn get_shortcuts(
     config_dir: &Path,
     rl: &mut RaylibHandle,
     thread: &RaylibThread,
@@ -44,7 +44,7 @@ pub fn get_shortcut_files(
     }
 
     for path in desktop_paths {
-        match parse_shortcut_file(&path, rl, thread) {
+        match parse_file(&path, rl, thread) {
             Ok(desktop_file) => desktop_files.push(desktop_file),
             Err(e) => eprintln!(
                 "WARNING: Failed to parse desktop file {}: {}",
@@ -57,7 +57,7 @@ pub fn get_shortcut_files(
     desktop_files
 }
 
-fn parse_shortcut_file(
+fn parse_file(
     file_path: impl AsRef<Path>,
     rl: &mut RaylibHandle,
     thread: &RaylibThread,

@@ -4,7 +4,7 @@ use std::collections::{HashMap, HashSet};
 
 use crate::ring_menu::draw;
 use crate::utils::{key_bind_pressed, mouse_wheel_scrolled};
-use crate::shortcut_parser::{DesktopFile, get_shortcut_files};
+use crate::shortcut_parser::{DesktopFile, get_shortcuts};
 
 mod ring_menu;
 mod utils;
@@ -34,7 +34,7 @@ fn main() {
 
     rl.set_target_fps(30);
 
-    let shortcut_files = get_shortcut_files(config_dir, &mut rl, &thread);
+    let shortcut_files = get_shortcuts(config_dir, &mut rl, &thread);
 
     let segments = shortcut_files.len();
     let mut seg_highlight_idx: Option<usize> = None;
