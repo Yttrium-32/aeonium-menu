@@ -1,21 +1,16 @@
 use freedesktop_entry_parser::parse_entry;
-use raylib::{RaylibHandle, RaylibThread, texture::Texture2D};
 use std::path::{Path, PathBuf};
-
-use crate::utils::load_icon;
 
 #[derive(Debug)]
 pub struct DesktopFile {
     name: String,
     exec_path: PathBuf,
     exec_args: Vec<String>,
-    pub icon: Texture2D,
+    pub icon: Option<PathBuf>,
 }
 
 pub fn get_shortcuts(
     config_dir: &Path,
-    rl: &mut RaylibHandle,
-    thread: &RaylibThread,
 ) -> Vec<DesktopFile> {
     let mut desktop_files = Vec::new();
 
@@ -44,7 +39,7 @@ pub fn get_shortcuts(
     }
 
     for path in desktop_paths {
-        match parse_file(&path, rl, thread) {
+        match parse_file(&path) {
             Ok(desktop_file) => desktop_files.push(desktop_file),
             Err(e) => eprintln!(
                 "WARNING: Failed to parse desktop file {}: {}",
@@ -59,8 +54,6 @@ pub fn get_shortcuts(
 
 fn parse_file(
     file_path: impl AsRef<Path>,
-    rl: &mut RaylibHandle,
-    thread: &RaylibThread,
 ) -> Result<DesktopFile, String> {
     let entry = match parse_entry(file_path.as_ref()) {
         Ok(val) => val,
@@ -79,7 +72,14 @@ fn parse_file(
         None => return Err("No `Exec` section found in file".to_string()),
     };
 
-    let icon = load_icon(rl, thread, desktop_section.attr("Icon"), file_path.as_ref())?;
+    let icon = match desktop_section.attr("Icon") {
+        Some(field) => Some(field.into()),
+        None => {
+            eprintln!("WARNING: No `Icon` field in {}", file_path.as_ref().display());
+            eprintln!("WARNING: Loading default icon");
+            None
+        }
+    };
 
     Ok(DesktopFile {
         name,

@@ -34,7 +34,7 @@ fn main() {
 
     rl.set_target_fps(30);
 
-    let shortcut_files = get_shortcuts(config_dir, &mut rl, &thread);
+    let shortcut_files = get_shortcuts(config_dir);
 
     let segments = shortcut_files.len();
     let mut seg_highlight_idx: Option<usize> = None;
