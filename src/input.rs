@@ -5,16 +5,15 @@ use input::event::{
 };
 use input::{Libinput, LibinputInterface};
 use libc::{O_ACCMODE, O_RDONLY, O_RDWR, O_WRONLY};
+use num_enum::TryFromPrimitive;
 use std::collections::HashSet;
 use std::fs::{File, OpenOptions};
 use std::os::unix::{fs::OpenOptionsExt, io::OwnedFd};
 use std::path::Path;
 
-struct Interface;
-
 #[allow(non_camel_case_types)]
-#[repr(u16)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[repr(u32)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, TryFromPrimitive)]
 pub enum KeyCode {
     KEY_RESERVED = 0,
     KEY_ESC = 1,
@@ -113,6 +112,9 @@ pub enum KeyCode {
     KEY_KP0 = 82,
     KEY_KPDOT = 83,
 }
+
+pub struct Interface;
+
 impl LibinputInterface for Interface {
     fn open_restricted(&mut self, path: &Path, flags: i32) -> Result<OwnedFd, i32> {
         OpenOptions::new()
@@ -130,7 +132,7 @@ impl LibinputInterface for Interface {
 
 #[derive(Debug)]
 pub struct InputState {
-    pressed_keys: HashSet<u32>,
+    pressed_keys: HashSet<KeyCode>,
     wheel_delta: i32,
 }
 
@@ -155,16 +157,18 @@ impl InputState {
         for event in input {
             match event {
                 Event::Keyboard(k) => {
-                    let key = k.key();
-                    match k.key_state() {
-                        KeyState::Pressed => {
-                            self.pressed_keys.insert(key);
-                        }
-                        KeyState::Released => {
-                            self.pressed_keys.remove(&key);
+                    if let Ok(key) = KeyCode::try_from(k.key()) {
+                        match k.key_state() {
+                            KeyState::Pressed => {
+                                self.pressed_keys.insert(key);
+                            }
+                            KeyState::Released => {
+                                self.pressed_keys.remove(&key);
+                            }
                         }
                     }
                 }
+
                 Event::Pointer(p) => match p {
                     PointerEvent::ScrollWheel(p) => {
                         let val = p.scroll_value(Axis::Vertical);
@@ -178,16 +182,17 @@ impl InputState {
                     }
                     _ => {}
                 },
+
                 _ => {}
             }
         }
     }
 
-    pub fn keys_fully_pressed(&self, keys: &[u32]) -> bool {
+    pub fn keys_fully_pressed(&self, keys: &HashSet<KeyCode>) -> bool {
         keys.iter().all(|k| self.pressed_keys.contains(k))
     }
 
-    pub fn mouse_wheel_scrolled(&self, modifiers: &[u32]) -> i32 {
+    pub fn mouse_wheel_scrolled(&self, modifiers: &HashSet<KeyCode>) -> i32 {
         if modifiers.iter().all(|k| self.pressed_keys.contains(k)) {
             self.wheel_delta
         } else {
