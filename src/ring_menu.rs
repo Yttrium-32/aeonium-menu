@@ -5,7 +5,7 @@ use raylib::math::{Rectangle, Vector2};
 use raylib::prelude::RaylibTexture2D;
 use raylib::texture::Texture2D;
 
-use crate::shortcut_parser::DesktopFile;
+use crate::utils::load_default_icon;
 
 const COLOR_TRANSLUCENT_BLUE: Color = Color::new(100, 149, 237, 77);
 const COLOR_DARK_BLUE: Color = Color::new(31, 102, 229, 220);
@@ -15,10 +15,10 @@ pub fn draw(
     screen_h: f32,
     screen_w: f32,
     highlight: Option<usize>,
-    shortcut_files: &[DesktopFile],
+    segments: usize
 ) {
-    let segments = shortcut_files.len();
-
+    // TODO: Load correct icon for shortcut
+    let icon = load_default_icon().unwrap();
     let center = Vector2::new(screen_w / 2.0, screen_h / 2.0);
     let outer_radius = screen_h.min(screen_w) * 0.25;
     let inner_radius = outer_radius * 0.75;
@@ -29,7 +29,7 @@ pub fn draw(
 
     let mut start_angle = -90.0;
 
-    for (idx, shortcut) in shortcut_files.iter().enumerate() {
+    for idx in 0..segments {
         let end_angle = start_angle + angle_per_segment;
 
         let color = match highlight {
@@ -66,7 +66,7 @@ pub fn draw(
             outer_radius,
             start_angle,
             end_angle,
-            &shortcut.icon,
+            &icon
         );
 
         start_angle = end_angle + gap_angle;
