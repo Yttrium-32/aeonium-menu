@@ -35,7 +35,7 @@ pub fn draw(
         let color = match highlight {
             Some(h_idx) => {
                 assert!(
-                    h_idx <= segments,
+                    h_idx < segments,
                     "hightlight index {} out of bounds for segments {}",
                     h_idx,
                     segments
