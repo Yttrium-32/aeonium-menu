@@ -88,7 +88,6 @@ fn input_checker_thread() -> mpsc::Receiver<Option<usize>> {
                     if let Some(idx_str) = trimmed.to_uppercase().strip_prefix("HIGHLIGHT ") {
                         let idx_str = idx_str.trim();
                         if let Ok(idx) = idx_str.parse::<usize>() {
-                            println!("GUI: INFO: Highlight received {idx}");
                             let _ = tx.send(Some(idx));
                         } else {
                             eprintln!("GUI: WARN: Invalid index in `{trimmed}`");
