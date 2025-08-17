@@ -58,7 +58,7 @@ fn main() {
     let rx = input_checker_thread();
 
     while !rl.window_should_close() {
-        if let Ok(idx) = rx.try_recv() {
+        while let Ok(idx) = rx.try_recv() {
             highlight_idx = idx;
         }
 
