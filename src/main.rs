@@ -1,8 +1,9 @@
+use ::input::Libinput;
 use directories::ProjectDirs;
 use input::{InputState, Interface, KeyCode};
-use ::input::Libinput;
 use std::collections::{HashMap, HashSet};
 use std::ffi::OsString;
+use std::io::Write;
 use std::process::{Command, Stdio};
 use utils::find_binary;
 
@@ -35,8 +36,18 @@ fn main() {
     let mut highlight_idx: Option<usize> = None;
 
     let gui_exe_path = find_binary("gui");
-    let mut gui_process = Command::new(gui_exe_path)
-        .arg(segments_str)
+    let mut cmd = Command::new(gui_exe_path);
+    cmd.arg(segments_str);
+
+    for desktop_file in shortcut_files {
+        if let Some(icon_path) = &desktop_file.icon {
+            cmd.arg(icon_path);
+        } else {
+            cmd.arg("default");
+        }
+    }
+
+    let mut gui_process = cmd
         .stdin(Stdio::piped())
         .spawn()
         .expect("Failed to run GUI");
@@ -45,6 +56,7 @@ fn main() {
     input.udev_assign_seat("seat0").unwrap();
 
     let mut state = InputState::new();
+    let gui_stdin = gui_process.stdin.as_mut().expect("Failed to open stdin");
 
     loop {
         state.update(&mut input);
@@ -63,6 +75,11 @@ fn main() {
                 Some(val) => Some((val + segments - 1) % segments),
                 None => Some(segments - 1),
             };
+        }
+
+        if let Some(idx) = highlight_idx {
+            writeln!(gui_stdin, "HIGHLIGHT {}", idx).ok();
+            gui_stdin.flush().ok();
         }
     }
 }
