@@ -1,91 +1,68 @@
 use directories::ProjectDirs;
-use raylib::prelude::*;
+use input::{InputState, Interface, KeyCode};
+use ::input::Libinput;
 use std::collections::{HashMap, HashSet};
+use std::ffi::OsString;
+use std::process::{Command, Stdio};
+use utils::find_binary;
 
-use crate::ring_menu::draw;
-use crate::utils::{key_bind_pressed, mouse_wheel_scrolled};
-use crate::shortcut_parser::{DesktopFile, get_shortcuts};
+use crate::shortcut_parser::get_shortcuts;
 
+mod input;
 mod ring_menu;
-mod utils;
 mod shortcut_parser;
-
-const WIN_W: i32 = 1920;
-const WIN_H: i32 = 1080;
+mod utils;
 
 fn main() {
     let proj_dirs = ProjectDirs::from("", "", "aeonium-menu").expect("No home directory found");
     let config_dir = proj_dirs.config_dir();
     println!("INFO: {config_dir:?}");
 
-    let modifiers: HashSet<KeyboardKey> =
-        vec![KeyboardKey::KEY_LEFT_CONTROL, KeyboardKey::KEY_LEFT_SHIFT]
-            .into_iter()
-            .collect();
-    let menu_control_keys: HashMap<&str, KeyboardKey> =
-        HashMap::from([("up", KeyboardKey::KEY_F10), ("down", KeyboardKey::KEY_F9)]);
+    let modifiers: HashSet<KeyCode> = vec![
+        KeyCode::KEY_LEFTCTRL,
+        KeyCode::KEY_LEFTSHIFT
+    ].into_iter().collect();
 
-    let (mut rl, thread) = raylib::init()
-        .size(WIN_W, WIN_H)
-        .title("Aeonium")
-        .transparent()
-        .undecorated()
-        .build();
-
-    rl.set_target_fps(30);
+    let menu_control_keys: HashMap<&str, KeyCode> = HashMap::from([
+            ("up", KeyCode::KEY_F10),
+            ("down", KeyCode::KEY_F9)
+    ]);
 
     let shortcut_files = get_shortcuts(config_dir);
 
     let segments = shortcut_files.len();
-    let mut seg_highlight_idx: Option<usize> = None;
+    let segments_str: OsString = segments.to_string().into();
+    let mut highlight_idx: Option<usize> = None;
 
-    while !rl.window_should_close() {
-        render_loop(
-            &mut rl,
-            &thread,
-            &modifiers,
-            &menu_control_keys,
-            &shortcut_files,
-            segments,
-            &mut seg_highlight_idx,
-        );
+    let gui_exe_path = find_binary("gui");
+    let mut gui_process = Command::new(gui_exe_path)
+        .arg(segments_str)
+        .stdin(Stdio::piped())
+        .spawn()
+        .expect("Failed to run GUI");
+
+    let mut input = Libinput::new_with_udev(Interface);
+    input.udev_assign_seat("seat0").unwrap();
+
+    let mut state = InputState::new();
+
+    loop {
+        state.update(&mut input);
+
+        let wheel_movement = state.mouse_wheel_scrolled(&modifiers);
+
+        if state.key_bind_pressed(&modifiers, menu_control_keys["up"]) || wheel_movement == -1 {
+            highlight_idx = match highlight_idx {
+                Some(val) => Some((val + 1) % segments),
+                None => Some(0),
+            };
+        }
+
+        if state.key_bind_pressed(&modifiers, menu_control_keys["down"]) || wheel_movement == 1 {
+            highlight_idx = match highlight_idx {
+                Some(val) => Some((val + segments - 1) % segments),
+                None => Some(segments - 1),
+            };
+        }
     }
-}
-
-#[inline]
-fn render_loop(
-    rl: &mut RaylibHandle,
-    thread: &RaylibThread,
-    modifiers: &HashSet<KeyboardKey>,
-    menu_control_keys: &HashMap<&str, KeyboardKey>,
-    shortcut_files: &[DesktopFile],
-    segments: usize,
-    seg_highlight_idx: &mut Option<usize>,
-) {
-    let mut d = rl.begin_drawing(thread);
-    d.clear_background(Color::new(0, 0, 0, 0));
-
-    let wheel_movement = mouse_wheel_scrolled(modifiers, &d);
-
-    if key_bind_pressed(modifiers, menu_control_keys["up"], &d) || wheel_movement == -1 {
-        *seg_highlight_idx = match *seg_highlight_idx {
-            Some(val) => Some((val + 1) % segments),
-            None => Some(0),
-        };
-    }
-
-    if key_bind_pressed(modifiers, menu_control_keys["down"], &d) || wheel_movement == 1 {
-        *seg_highlight_idx = match *seg_highlight_idx {
-            Some(val) => Some((val + segments - 1) % segments),
-            None => Some(segments - 1),
-        };
-    }
-
-    draw(
-        &mut d,
-        WIN_H as f32,
-        WIN_W as f32,
-        *seg_highlight_idx,
-        shortcut_files,
-    );
 }

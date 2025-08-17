@@ -1,35 +1,11 @@
 use freedesktop_icons::lookup;
 use raylib::ffi::{Image, LoadImageFromMemory, LoadTextureFromImage, UnloadImage};
 use raylib::prelude::*;
-use std::{
-    collections::HashSet,
-    env,
-    ffi::CString,
-    path::{Path, PathBuf},
-};
+use std::{env, ffi::CString};
+
+use std::path::{Path, PathBuf};
 
 static DEFAULT_ICON_DATA: &[u8] = include_bytes!("../resources/default.png");
-
-pub fn key_bind_pressed(
-    modifier_keys: &HashSet<KeyboardKey>,
-    main_key: KeyboardKey,
-    d: &RaylibDrawHandle,
-) -> bool {
-    modifier_keys.iter().all(|&key| d.is_key_down(key)) && d.is_key_pressed(main_key)
-}
-
-pub fn mouse_wheel_scrolled(modifier_keys: &HashSet<KeyboardKey>, d: &RaylibDrawHandle) -> i32 {
-    let wheel_movement = d.get_mouse_wheel_move();
-    if modifier_keys.iter().all(|&key| d.is_key_down(key)) {
-        match wheel_movement {
-            w if w > 0.0 => 1,
-            w if w < 0.0 => -1,
-            _ => 0,
-        }
-    } else {
-        0
-    }
-}
 
 pub fn find_binary(name: &str) -> PathBuf {
     let profile = env::var("PROFILE").unwrap_or_else(|_| "debug".into());
@@ -73,7 +49,7 @@ pub fn load_icon(
         Some(path_str) => path_str,
         None => {
             eprintln!(
-                "WARNING: Failed to icon path to str for {}",
+                "WARNING: Failed to convert icon path to str for {}",
                 file_path.display()
             );
             eprintln!("WARNING: Loading default icon");

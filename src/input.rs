@@ -133,6 +133,7 @@ impl LibinputInterface for Interface {
 #[derive(Debug)]
 pub struct InputState {
     pressed_keys: HashSet<KeyCode>,
+    just_pressed: HashSet<KeyCode>,
     wheel_delta: i32,
 }
 
@@ -146,6 +147,7 @@ impl InputState {
     pub fn new() -> Self {
         Self {
             pressed_keys: HashSet::new(),
+            just_pressed: HashSet::new(),
             wheel_delta: 0,
         }
     }
@@ -153,6 +155,7 @@ impl InputState {
     pub fn update(&mut self, input: &mut Libinput) {
         input.dispatch().unwrap();
         self.wheel_delta = 0; // reset every cycle
+        self.just_pressed.clear();
 
         for event in input {
             match event {
@@ -160,6 +163,9 @@ impl InputState {
                     if let Ok(key) = KeyCode::try_from(k.key()) {
                         match k.key_state() {
                             KeyState::Pressed => {
+                                if !self.pressed_keys.contains(&key) {
+                                    self.just_pressed.insert(key);
+                                }
                                 self.pressed_keys.insert(key);
                             }
                             KeyState::Released => {
@@ -188,8 +194,13 @@ impl InputState {
         }
     }
 
-    pub fn keys_fully_pressed(&self, keys: &HashSet<KeyCode>) -> bool {
+    pub fn keys_held(&self, keys: &HashSet<KeyCode>) -> bool {
         keys.iter().all(|k| self.pressed_keys.contains(k))
+    }
+
+    pub fn key_bind_pressed(&self, modifiers: &HashSet<KeyCode>, main: KeyCode) -> bool {
+        modifiers.iter().all(|m| self.pressed_keys.contains(m))
+            && self.just_pressed.contains(&main)
     }
 
     pub fn mouse_wheel_scrolled(&self, modifiers: &HashSet<KeyCode>) -> i32 {
