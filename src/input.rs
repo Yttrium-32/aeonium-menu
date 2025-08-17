@@ -203,7 +203,7 @@ impl InputState {
             && self.just_pressed.contains(&main)
     }
 
-    pub fn mouse_wheel_scrolled(&self, modifiers: &HashSet<KeyCode>) -> i32 {
+    pub fn scrolled(&self, modifiers: &HashSet<KeyCode>) -> i32 {
         if modifiers.iter().all(|k| self.pressed_keys.contains(k)) {
             self.wheel_delta
         } else {

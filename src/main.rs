@@ -61,16 +61,16 @@ fn main() {
     loop {
         state.update(&mut input);
 
-        let wheel_movement = state.mouse_wheel_scrolled(&modifiers);
+        let scroll_movement = state.scrolled(&modifiers);
 
-        if state.key_bind_pressed(&modifiers, menu_control_keys["up"]) || wheel_movement == 1 {
+        if state.key_bind_pressed(&modifiers, menu_control_keys["up"]) || scroll_movement == 1 {
             highlight_idx = match highlight_idx {
                 Some(val) => Some((val + 1) % segments),
                 None => Some(0),
             };
         }
 
-        if state.key_bind_pressed(&modifiers, menu_control_keys["down"]) || wheel_movement == -1 {
+        if state.key_bind_pressed(&modifiers, menu_control_keys["down"]) || scroll_movement == -1 {
             highlight_idx = match highlight_idx {
                 Some(val) => Some((val + segments - 1) % segments),
                 None => Some(segments - 1),
