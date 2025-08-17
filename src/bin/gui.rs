@@ -52,13 +52,17 @@ fn input_checker_thread() -> mpsc::Receiver<Option<usize>> {
             match line {
                 Ok(text) => {
                     let trimmed = text.trim();
-                    if let Ok(idx) = trimmed.parse::<usize>() {
-                        println!("GUI: Highlight received: {}", idx);
-                        if tx.send(Some(idx)).is_err() {
-                            eprint!("GUI: Receiver dropped");
+                    if let Some(idx_str) = trimmed.strip_prefix("HIGHLIGHT ") {
+                        if let Ok(idx) = idx_str.parse::<usize>() {
+                            println!("GUI: INFO: Highlight received {idx}");
+                            if tx.send(Some(idx)).is_err() {
+                                eprintln!("GUI: WARN: Receiver dropped");
+                            }
+                        } else {
+                            eprintln!("GUI: WARN: Invalid index in `{trimmed}`");
                         }
                     } else {
-                        eprintln!("GUI: Failed to parse `{trimmed}`");
+                        eprintln!("GUI: WARN: Unexpected input `{trimmed}`");
                     }
                 }
                 Err(err) => {
