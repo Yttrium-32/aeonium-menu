@@ -83,7 +83,7 @@ pub fn load_default_icon() -> Result<Texture2D, String> {
     };
 
     if image.data.is_null() {
-        return Err("Failed to default icon from bytes".to_string());
+        return Err("Failed to load default icon from bytes".to_string());
     }
 
     unsafe {
