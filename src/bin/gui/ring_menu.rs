@@ -28,7 +28,7 @@ pub fn draw(
 
     let mut start_angle = -90.0;
 
-    for idx in 0..segments {
+    for (idx, icon_tex) in icon_textures.iter().enumerate() {
         let end_angle = start_angle + angle_per_segment;
 
         let color = match highlight {
@@ -65,7 +65,7 @@ pub fn draw(
             outer_radius,
             start_angle,
             end_angle,
-            &icon_textures[idx]
+            icon_tex
         );
 
         start_angle = end_angle + gap_angle;

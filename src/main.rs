@@ -1,5 +1,6 @@
 use directories::ProjectDirs;
 use input::Libinput;
+use shortcut_parser::DesktopFile;
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 use std::io::Write;
