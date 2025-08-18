@@ -5,8 +5,9 @@ use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 use std::io::Write;
 use std::process::{Child, ChildStdin, Command, Stdio};
-use std::sync::mpsc;
+use std::sync::mpsc::{self, RecvTimeoutError};
 use std::thread;
+use std::time::{Duration, Instant};
 use utils::find_binary;
 
 use crate::libinput_events::{InputState, Interface, KeyCode};
@@ -75,82 +76,134 @@ fn main() {
     let mut gui_process: Option<Child> = None;
     let mut gui_stdin: Option<ChildStdin> = None;
     let mut highlight_idx: Option<usize> = None;
+    let mut idle_duration: Option<Instant> = None;
 
-    while let Ok(event) = rx.recv() {
-        match event {
-            EventType::MenuUp | EventType::MenuDown | EventType::Scroll(_)
-                if gui_process.is_none() =>
-            {
-                let gui_exe_path = find_binary("gui");
+    loop {
+        match rx.recv_timeout(Duration::from_millis(100)) {
+            Ok(event) => {
+                handle_event(
+                    event,
+                    segments,
+                    &shortcut_files,
+                    &mut gui_process,
+                    &mut gui_stdin,
+                    &mut highlight_idx,
+                    &mut idle_duration,
+                );
 
-                let mut cmd = Command::new(gui_exe_path);
-                cmd.arg(segments.to_string());
+                if let (Some(stdin), Some(idx)) = (gui_stdin.as_mut(), highlight_idx) {
+                    if let Err(e) = writeln!(stdin, "HIGHLIGHT {}", idx) {
+                        eprintln!("ERR: Failed to write GUI stdin: {e}");
+                        break;
+                    }
 
-                for desktop_file in &shortcut_files {
-                    if let Some(icon_path) = &desktop_file.icon {
-                        cmd.arg(icon_path);
-                    } else {
-                        cmd.arg("default");
+                    if let Err(e) = stdin.flush() {
+                        eprintln!("ERR: Failed to flush stdin: {e}");
+                        break;
                     }
                 }
-
-                let mut child = cmd
-                    .stdin(Stdio::piped())
-                    .spawn()
-                    .expect("Failed to run GUI");
-
-                gui_stdin = Some(child.stdin.take().unwrap());
-                gui_process = Some(child);
-
-                highlight_idx = Some(match event {
-                    EventType::MenuUp => segments - 1,
-                    EventType::MenuDown => 0,
-                    EventType::Scroll(d) if d < 0 => segments - 1,
-                    EventType::Scroll(d) if d > 0 => 0,
-                    _ => unreachable!(),
-                })
             }
 
-            EventType::MenuUp => {
-                highlight_idx = Some(match highlight_idx {
-                    Some(val) => (val + 1) % segments,
-                    None => 0,
-                });
+            Err(RecvTimeoutError::Timeout) => {
+                if let (Some(start), Some(stdin)) = (idle_duration, gui_stdin.as_mut()) {
+                    if start.elapsed() > Duration::from_secs(1) {
+                        if let Err(e) = writeln!(stdin, "QUIT") {
+                            eprintln!("ERR: Failed to write GUI stdin: {e}");
+                        }
+                        idle_duration = None;
+
+                        if let Some(mut child) = gui_process.take() {
+                            let status = child.wait().expect("ERR: GUI process wasn't runnning");
+                            eprintln!("INFO: GUI exited with status: {status}");
+                        }
+                        gui_stdin = None;
+                    }
+                }
             }
 
-            EventType::MenuDown => {
-                highlight_idx = Some(match highlight_idx {
-                    Some(val) => (val + segments - 1) % segments,
-                    None => segments - 1,
-                });
+            Err(RecvTimeoutError::Disconnected) => {
+                eprintln!("Err: Input checker thread broken");
+                break;
+            }
+        }
+    }
+}
+
+#[inline]
+fn handle_event(
+    event: EventType,
+    segments: usize,
+    shortcut_files: &[DesktopFile],
+    gui_process: &mut Option<Child>,
+    gui_stdin: &mut Option<ChildStdin>,
+    highlight_idx: &mut Option<usize>,
+    idle_duration: &mut Option<Instant>,
+) {
+    match event {
+        EventType::MenuUp | EventType::MenuDown | EventType::Scroll(_) if gui_process.is_none() => {
+            let gui_exe_path = find_binary("gui");
+
+            let mut cmd = Command::new(gui_exe_path);
+            cmd.arg(segments.to_string());
+
+            for desktop_file in shortcut_files {
+                if let Some(icon_path) = &desktop_file.icon {
+                    cmd.arg(icon_path);
+                } else {
+                    cmd.arg("default");
+                }
             }
 
-            EventType::Scroll(scroll_delta) => match scroll_delta.cmp(&0) {
+            let mut child = cmd
+                .stdin(Stdio::piped())
+                .spawn()
+                .expect("Failed to run GUI");
+
+            *idle_duration = Some(Instant::now());
+            *gui_stdin = Some(child.stdin.take().unwrap());
+            *gui_process = Some(child);
+
+            *highlight_idx = Some(match event {
+                EventType::MenuUp => segments - 1,
+                EventType::MenuDown => 0,
+                EventType::Scroll(d) if d < 0 => segments - 1,
+                EventType::Scroll(d) if d > 0 => 0,
+                _ => unreachable!(),
+            })
+        }
+
+        EventType::MenuUp => {
+            *idle_duration = Some(Instant::now());
+            *highlight_idx = Some(match *highlight_idx {
+                Some(val) => (val + 1) % segments,
+                None => 0,
+            });
+        }
+
+        EventType::MenuDown => {
+            *idle_duration = Some(Instant::now());
+            *highlight_idx = Some(match *highlight_idx {
+                Some(val) => (val + segments - 1) % segments,
+                None => segments - 1,
+            });
+        }
+
+        EventType::Scroll(scroll_delta) => {
+            *idle_duration = Some(Instant::now());
+            match scroll_delta.cmp(&0) {
                 Ordering::Greater => {
-                    highlight_idx = Some(match highlight_idx {
+                    *highlight_idx = Some(match *highlight_idx {
                         Some(val) => (val + 1) % segments,
                         None => 0,
                     })
                 }
                 Ordering::Less => {
-                    highlight_idx = Some(match highlight_idx {
+                    *highlight_idx = Some(match *highlight_idx {
                         Some(val) => (val + segments - 1) % segments,
                         None => segments - 1,
                     });
                 }
                 Ordering::Equal => {}
-            },
-        }
-
-        if let (Some(stdin), Some(idx)) = (gui_stdin.as_mut(), highlight_idx) {
-            if let Err(e) = writeln!(stdin, "HIGHLIGHT {}", idx) {
-                eprintln!("ERR: Failed to write GUI stdin: {e}");
-                break;
-            }
-
-            if let Err(e) = stdin.flush() {
-                eprintln!("ERR: Failed to flush stdin: {e}");
-                break;
             }
         }
     }
