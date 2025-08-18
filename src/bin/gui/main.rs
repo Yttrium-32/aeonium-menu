@@ -39,7 +39,7 @@ fn main() {
 
     for path in icon_paths {
         let texture = if path == "default" {
-            load_default_icon(DEFAULT_ICON_DATA).expect("GUI: Failed to load built-in default icon")
+            load_default_icon(DEFAULT_ICON_DATA).expect("GUI: Failed to load default icon")
         } else {
             match rl.load_texture(&thread, &path) {
                 Ok(texture) => texture,
@@ -47,7 +47,7 @@ fn main() {
                     eprintln!("WARNING: Failed to load icon `{}`: {}", path, err);
                     eprintln!("WARNING: Falling back to default icon");
                     load_default_icon(DEFAULT_ICON_DATA)
-                        .expect("GUI: Failed to load built-in default icon")
+                        .expect("GUI: Failed to load default icon")
                 }
             }
         };
