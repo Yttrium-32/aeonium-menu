@@ -44,19 +44,29 @@ fn main() {
         let mut libinput = Libinput::new_with_udev(Interface);
         libinput.udev_assign_seat("seat0").unwrap();
         let mut state = InputState::new();
+
         loop {
             state.update(&mut libinput);
 
             if state.key_bind_pressed(&modifiers, menu_control_keys["up"]) {
-                tx.send(EventType::MenuUp).ok();
+                if let Err(e) = tx.send(EventType::MenuUp) {
+                    eprintln!("ERR: Failed to send MenuUp event: {e}");
+                    break;
+                }
             }
             if state.key_bind_pressed(&modifiers, menu_control_keys["down"]) {
-                tx.send(EventType::MenuDown).ok();
+                if let Err(e) = tx.send(EventType::MenuDown) {
+                    eprintln!("ERR: Failed to send MenuDown event: {e}");
+                    break;
+                }
             }
 
             let delta = state.scrolled(&modifiers);
             if delta != 0 {
-                tx.send(EventType::Scroll(delta)).ok();
+                if let Err(e) = tx.send(EventType::Scroll(delta)) {
+                    eprintln!("ERR: Failed to send Scroll event: {e}");
+                    break;
+                }
             }
         }
     });
@@ -132,8 +142,15 @@ fn main() {
         }
 
         if let (Some(stdin), Some(idx)) = (gui_stdin.as_mut(), highlight_idx) {
-            writeln!(stdin, "HIGHLIGHT {}", idx).ok();
-            stdin.flush().ok();
+            if let Err(e) = writeln!(stdin, "HIGHLIGHT {}", idx) {
+                eprintln!("ERR: Failed to write GUI stdin: {e}");
+                break;
+            }
+
+            if let Err(e) = stdin.flush() {
+                eprintln!("ERR: Failed to flush stdin: {e}");
+                break;
+            }
         }
     }
 }
