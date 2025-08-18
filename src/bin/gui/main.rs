@@ -57,9 +57,16 @@ fn main() {
 
     let rx = input_checker_thread();
 
-    while !rl.window_should_close() {
-        while let Ok(idx) = rx.try_recv() {
-            highlight_idx = idx;
+    'render_loop: while !rl.window_should_close() {
+        while let Ok(msg) = rx.try_recv() {
+            match msg {
+                Some(idx) => {
+                    highlight_idx = Some(idx);
+                }
+                None => {
+                    break 'render_loop;
+                }
+            }
         }
 
         let mut d = rl.begin_drawing(&thread);
@@ -92,6 +99,9 @@ fn input_checker_thread() -> mpsc::Receiver<Option<usize>> {
                         } else {
                             eprintln!("GUI: WARN: Invalid index in `{trimmed}`");
                         }
+                    } else if trimmed.eq_ignore_ascii_case("QUIT") {
+                        // Send none for exit
+                        let _ = tx.send(None);
                     } else {
                         eprintln!("GUI: WARN: Unexpected input `{trimmed}`");
                     }
