@@ -13,3 +13,7 @@ libc = "0.2.175"
 nix = { version = "0.29.0", features = ["poll"] }
 num_enum = "0.7.4"
 raylib = "5.5.1"
+
+[[bin]]
+name = "gui"
+path = "src/bin/gui/main.rs"
