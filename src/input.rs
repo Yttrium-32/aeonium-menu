@@ -194,10 +194,6 @@ impl InputState {
         }
     }
 
-    pub fn keys_held(&self, keys: &HashSet<KeyCode>) -> bool {
-        keys.iter().all(|k| self.pressed_keys.contains(k))
-    }
-
     pub fn key_bind_pressed(&self, modifiers: &HashSet<KeyCode>, main: KeyCode) -> bool {
         modifiers.iter().all(|m| self.pressed_keys.contains(m))
             && self.just_pressed.contains(&main)
