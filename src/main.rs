@@ -1,15 +1,15 @@
-use ::input::Libinput;
+use input::Libinput;
 use directories::ProjectDirs;
-use input::{InputState, Interface, KeyCode};
 use std::collections::{HashMap, HashSet};
 use std::ffi::OsString;
 use std::io::Write;
 use std::process::{Command, Stdio};
 use utils::find_binary;
 
+use crate::libinput_events::{InputState, Interface, KeyCode};
 use crate::shortcut_parser::get_shortcuts;
 
-mod input;
+mod libinput_events;
 mod shortcut_parser;
 mod utils;
 
