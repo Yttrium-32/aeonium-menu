@@ -6,12 +6,12 @@ use std::io::BufRead;
 use std::sync::mpsc;
 use std::{env, io, thread};
 
-use aeonium_menu::ring_menu;
+mod ring_menu;
 
 const WIN_W: i32 = 1920;
 const WIN_H: i32 = 1080;
 
-static DEFAULT_ICON_DATA: &[u8] = include_bytes!("../../resources/default.png");
+static DEFAULT_ICON_DATA: &[u8] = include_bytes!("../../../resources/default.png");
 
 fn main() {
     let mut args = env::args_os().skip(1);

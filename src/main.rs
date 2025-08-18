@@ -10,7 +10,6 @@ use utils::find_binary;
 use crate::shortcut_parser::get_shortcuts;
 
 mod input;
-mod ring_menu;
 mod shortcut_parser;
 mod utils;
 
