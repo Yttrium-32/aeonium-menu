@@ -45,13 +45,13 @@ cargo run
 - The user running the application **must be added to the `input` group** to
   allow global key bind and scroll detection through `libinput`.
 
-### Current controls
+### Current controls:
 
 #### Modifiers (must be held):
-  - `Left Ctrl`
-  - `Left Shift`
+  - <kbd>Ctrl</kbd>
+  - <kbd>Shift</kbd>
 
 #### Menu activation:
-  - `F9`: Move *down*
-  - `F10`: Move *up*
-  - Scroll with the mouse wheel or encoder
+  - <kbd>F9</kbd>: Move down
+  - <kbd>F10</kbd>: Move up
+  - Scroll with the mouse wheel or encoder knob
