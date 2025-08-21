@@ -15,10 +15,10 @@ The name of this project is taken from flowers of the same name.
 ---
 
 ## Planned Features
-- [  ] Systray Icon
-- [  ] Heavy customisability
-- [  ] Configuration menu
-- [  ] Integration with systemd and openrc
+- [ ] Systray Icon
+- [ ] Heavy customisability
+- [ ] Configuration menu
+- [ ] Integration with systemd and openrc
 
 ## Build Instructions
 
