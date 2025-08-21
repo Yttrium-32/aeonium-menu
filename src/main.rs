@@ -1,17 +1,21 @@
-use directories::ProjectDirs;
-use input::Libinput;
-use shortcut_parser::DesktopFile;
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 use std::io::Write;
 use std::process::{Child, ChildStdin, Command, Stdio};
+use std::result::Result::Ok;
 use std::sync::mpsc::{self, RecvTimeoutError};
 use std::thread;
 use std::time::{Duration, Instant};
-use utils::find_binary;
+
+use anyhow::Context;
+use directories::ProjectDirs;
+use input::Libinput;
+use tracing::{error, info};
 
 use crate::libinput_events::{InputState, Interface, KeyCode};
+use crate::shortcut_parser::DesktopFile;
 use crate::shortcut_parser::get_shortcuts;
+use crate::utils::find_binary;
 
 mod libinput_events;
 mod shortcut_parser;
@@ -24,10 +28,14 @@ enum EventType {
     Scroll(i32),
 }
 
-fn main() {
+fn main() -> anyhow::Result<()> {
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::INFO)
+        .init();
+
     let proj_dirs = ProjectDirs::from("", "", "aeonium-menu").expect("No home directory found");
     let config_dir = proj_dirs.config_dir();
-    println!("INFO: {config_dir:?}");
+    info!("Found config directory: {}", config_dir.display());
 
     let modifiers: HashSet<KeyCode> = vec![KeyCode::KEY_LEFTCTRL, KeyCode::KEY_LEFTSHIFT]
         .into_iter()
@@ -36,13 +44,13 @@ fn main() {
     let menu_control_keys: HashMap<&str, KeyCode> =
         HashMap::from([("up", KeyCode::KEY_F10), ("down", KeyCode::KEY_F9)]);
 
-    let shortcut_files = get_shortcuts(config_dir);
+    let shortcut_files = get_shortcuts(config_dir)?;
     let segments = shortcut_files.len();
 
     let (tx, rx) = mpsc::channel();
 
     // Spawn input checker thread
-    thread::spawn(move || {
+    thread::spawn(move || -> anyhow::Result<()> {
         let mut libinput = Libinput::new_with_udev(Interface);
         libinput.udev_assign_seat("seat0").unwrap();
         let mut state = InputState::new();
@@ -51,24 +59,19 @@ fn main() {
             state.update(&mut libinput);
 
             if state.key_bind_pressed(&modifiers, menu_control_keys["up"]) {
-                if let Err(e) = tx.send(EventType::MenuUp) {
-                    eprintln!("ERR: Failed to send MenuUp event: {e}");
-                    break;
-                }
+                tx.send(EventType::MenuUp)
+                   .context("Failed to send MenuUp event")?;
             }
+
             if state.key_bind_pressed(&modifiers, menu_control_keys["down"]) {
-                if let Err(e) = tx.send(EventType::MenuDown) {
-                    eprintln!("ERR: Failed to send MenuDown event: {e}");
-                    break;
-                }
+                tx.send(EventType::MenuDown)
+                    .context("Failed to send MenuDown event")?;
             }
 
             let delta = state.scrolled(&modifiers);
             if delta != 0 {
-                if let Err(e) = tx.send(EventType::Scroll(delta)) {
-                    eprintln!("ERR: Failed to send Scroll event: {e}");
-                    break;
-                }
+                tx.send(EventType::Scroll(delta))
+                    .context(format!("Failed to send Scroll event with delta {}", delta))?;
             }
         }
     });
@@ -89,32 +92,27 @@ fn main() {
                     &mut gui_stdin,
                     &mut highlight_idx,
                     &mut idle_duration,
-                );
+                )?;
 
                 if let (Some(stdin), Some(idx)) = (gui_stdin.as_mut(), highlight_idx) {
-                    if let Err(e) = writeln!(stdin, "HIGHLIGHT {}", idx) {
-                        eprintln!("ERR: Failed to write GUI stdin: {e}");
-                        break;
-                    }
-
-                    if let Err(e) = stdin.flush() {
-                        eprintln!("ERR: Failed to flush stdin: {e}");
-                        break;
-                    }
+                    writeln!(stdin, "HIGHLIGHT {}", idx).context("Failed to write GUI stdin")?;
+                    stdin.flush().context("Failed to flush stdin")?;
                 }
             }
 
             Err(RecvTimeoutError::Timeout) => {
                 if let (Some(start), Some(stdin)) = (idle_duration, gui_stdin.as_mut()) {
                     if start.elapsed() > Duration::from_secs(1) {
-                        if let Err(e) = writeln!(stdin, "QUIT") {
-                            eprintln!("ERR: Failed to write GUI stdin: {e}");
-                        }
+                        writeln!(stdin, "QUIT").context("Failed to write GUI stdin")?;
                         idle_duration = None;
 
                         if let Some(mut child) = gui_process.take() {
-                            let status = child.wait().expect("ERR: GUI process wasn't runnning");
-                            eprintln!("INFO: GUI exited with status: {status}");
+                            let status = child.wait().context("Failed to wait for GUI process")?;
+
+                            match status.code() {
+                                Some(code) => info!("GUI process exited with status code: {code}"),
+                                None => info!("GUI process terminated by signal")
+                            }
                         }
                         gui_stdin = None;
                     }
@@ -122,14 +120,15 @@ fn main() {
             }
 
             Err(RecvTimeoutError::Disconnected) => {
-                eprintln!("Err: Input checker thread broken");
+                error!("Input checker thread broken");
                 break;
             }
         }
     }
+
+    anyhow::Ok(())
 }
 
-#[inline]
 fn handle_event(
     event: EventType,
     segments: usize,
@@ -138,7 +137,7 @@ fn handle_event(
     gui_stdin: &mut Option<ChildStdin>,
     highlight_idx: &mut Option<usize>,
     idle_duration: &mut Option<Instant>,
-) {
+) -> anyhow::Result<()> {
     match event {
         EventType::MenuUp | EventType::MenuDown | EventType::Scroll(_) if gui_process.is_none() => {
             let gui_exe_path = find_binary("gui");
@@ -157,7 +156,7 @@ fn handle_event(
             let mut child = cmd
                 .stdin(Stdio::piped())
                 .spawn()
-                .expect("Failed to run GUI");
+                .context("Failed to run GUI")?;
 
             *idle_duration = Some(Instant::now());
             *gui_stdin = Some(child.stdin.take().unwrap());
@@ -207,4 +206,6 @@ fn handle_event(
             }
         }
     }
+
+    anyhow::Ok(())
 }
