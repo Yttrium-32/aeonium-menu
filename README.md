@@ -1,4 +1,5 @@
 # Aeonium Menu
+
 > [!WARNING]
 > This project is under heavy development. Many features are incomplete and things will break often. Use at your own risk.
 
@@ -12,6 +13,12 @@ Keyboard-only usage is also supported for minimal setups, but not recommended.
 The name of this project is taken from flowers of the same name.
 
 ---
+
+## Planned Features
+- [  ] Systray Icon
+- [  ] Heavy customisability
+- [  ] Configuration menu
+- [  ] Integration with systemd and openrc
 
 ## Build Instructions
 
@@ -29,8 +36,6 @@ compiled and discoverable, only then can the main application be run.
 ```bash
 cargo run
 ```
-
----
 
 ## Usage
 > [!WARNING]
