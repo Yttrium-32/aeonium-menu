@@ -1,3 +1,4 @@
+use std::os::fd::{AsRawFd, BorrowedFd};
 use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 use std::os::unix::{fs::OpenOptionsExt, io::OwnedFd};
@@ -11,6 +12,7 @@ use input::event::pointer::{Axis, PointerScrollEvent};
 use input::event::{Event, PointerEvent};
 use input::{Libinput, LibinputInterface};
 use libc::{O_ACCMODE, O_RDONLY, O_RDWR, O_WRONLY};
+use nix::poll::{poll, PollFd, PollFlags, PollTimeout};
 use num_enum::TryFromPrimitive;
 
 use crate::EventType;
@@ -217,10 +219,21 @@ pub fn run_input_checker(
     menu_control_keys: HashMap<&str, KeyCode>,
 ) -> anyhow::Result<()> {
     let mut libinput = Libinput::new_with_udev(Interface);
+
+    let fd = libinput.as_raw_fd();
+
+    // Safety: libinput owns the fd and it remains valid while the variable `libinput` lives
+    let borrowed_fd: BorrowedFd<'_> = unsafe { BorrowedFd::borrow_raw(fd) };
+    let mut fds = [PollFd::new(borrowed_fd, PollFlags::POLLIN)];
+
     libinput.udev_assign_seat("seat0").unwrap();
+
     let mut state = InputState::new();
 
     loop {
+        // Block until fd is ready
+        poll(&mut fds, PollTimeout::NONE)?;
+
         state.update(&mut libinput);
 
         if state.key_bind_pressed(modifiers, menu_control_keys["up"]) {
