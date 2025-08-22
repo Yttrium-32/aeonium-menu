@@ -80,7 +80,7 @@ fn main() -> anyhow::Result<()> {
         };
 
         if !gui_state.tick(event, segments, &shortcut_files)? {
-            break;
+            continue;
         }
     }
 
