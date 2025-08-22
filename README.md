@@ -44,6 +44,7 @@ cargo run
 ### Requirements
 - The user running the application **must be added to the `input` group** to
   allow global key bind and scroll detection through `libinput`.
+- Add your `.desktop` shortcuts to `~/.config/aeonium-menu/shortcuts/`
 
 ### Current controls:
 
