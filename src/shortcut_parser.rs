@@ -11,7 +11,9 @@ pub struct DesktopFile {
     pub icon: Option<PathBuf>,
 }
 
-pub fn get_shortcuts(config_dir: &Path) -> anyhow::Result<Vec<DesktopFile>> {
+pub fn get_shortcuts(config_dir: impl AsRef<Path>) -> anyhow::Result<Vec<DesktopFile>> {
+    let config_dir = config_dir.as_ref();
+
     let mut desktop_files = Vec::new();
 
     let shortcuts_dir = config_dir.join("shortcuts");
@@ -43,10 +45,10 @@ pub fn get_shortcuts(config_dir: &Path) -> anyhow::Result<Vec<DesktopFile>> {
     }
 
     for path in desktop_paths {
-        match parse_file(&path) {
+        match DesktopFile::new(&path) {
             Ok(desktop_file) => desktop_files.push(desktop_file),
             Err(e) => {
-                warn!(error = ?e, file = %path.display(), "Failed to parse desktop file");
+                warn!("Failed to parse desktop file {}: {e}", path.display());
             }
         }
     }
@@ -54,41 +56,43 @@ pub fn get_shortcuts(config_dir: &Path) -> anyhow::Result<Vec<DesktopFile>> {
     Ok(desktop_files)
 }
 
-fn parse_file(file_path: impl AsRef<Path>) -> anyhow::Result<DesktopFile> {
-    let file_path = file_path.as_ref();
-    let entry = parse_entry(file_path)
-        .with_context(|| format!("Failed to parse {}", file_path.display()))?;
+impl DesktopFile {
+    fn new(file_path: impl AsRef<Path>) -> anyhow::Result<Self> {
+        let file_path = file_path.as_ref();
+        let entry = parse_entry(file_path)
+            .with_context(|| format!("Failed to parse {}", file_path.display()))?;
 
-    let desktop_section = entry.section("Desktop Entry");
+        let desktop_section = entry.section("Desktop Entry");
 
-    let name = desktop_section
-        .attr("Name")
-        .with_context(|| format!("No `Name` section found in {}", file_path.display()))?;
+        let name = desktop_section
+            .attr("Name")
+            .with_context(|| format!("No `Name` section found in {}", file_path.display()))?;
 
-    let exec_attr = desktop_section
-        .attr("Exec")
-        .with_context(|| format!("No `Exec` section found in {}", file_path.display()))?;
+        let exec_attr = desktop_section
+            .attr("Exec")
+            .with_context(|| format!("No `Exec` section found in {}", file_path.display()))?;
 
-    let total_exec_cmd: Vec<&str> = exec_attr.split_whitespace().collect();
-    let (exec_path, exec_args) = total_exec_cmd
-        .split_first()
-        .with_context(|| format!("`Exec` field in {} is empty", file_path.display()))?;
+        let total_exec_cmd: Vec<&str> = exec_attr.split_whitespace().collect();
+        let (exec_path, exec_args) = total_exec_cmd
+            .split_first()
+            .with_context(|| format!("`Exec` field in {} is empty", file_path.display()))?;
 
-    let icon = match desktop_section.attr("Icon") {
-        Some(field) => Some(PathBuf::from(field)),
-        None => {
-            tracing::warn!(
-                "No `Icon` field in {}, falling back to default",
-                file_path.display()
-            );
-            None
-        }
-    };
+        let icon = match desktop_section.attr("Icon") {
+            Some(field) => Some(PathBuf::from(field)),
+            None => {
+                tracing::warn!(
+                    "No `Icon` field in {}, falling back to default",
+                    file_path.display()
+                );
+                None
+            }
+        };
 
-    Ok(DesktopFile {
-        name: name.to_string(),
-        exec_path: PathBuf::from(exec_path),
-        exec_args: exec_args.iter().map(|&s| s.to_string()).collect(),
-        icon,
-    })
+        Ok(Self {
+            name: name.to_string(),
+            exec_path: PathBuf::from(exec_path),
+            exec_args: exec_args.iter().map(|&s| s.to_string()).collect(),
+            icon,
+        })
+    }
 }
