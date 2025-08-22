@@ -4,8 +4,8 @@ use std::io::Write;
 use std::process::{Child, ChildStdin, Command, Stdio};
 use std::result::Result::Ok;
 use std::sync::mpsc::{self, RecvTimeoutError};
-use std::thread;
 use std::time::{Duration, Instant};
+use std::thread;
 
 use anyhow::Context;
 use directories::ProjectDirs;
@@ -60,7 +60,7 @@ fn main() -> anyhow::Result<()> {
 
             if state.key_bind_pressed(&modifiers, menu_control_keys["up"]) {
                 tx.send(EventType::MenuUp)
-                   .context("Failed to send MenuUp event")?;
+                    .context("Failed to send MenuUp event")?;
             }
 
             if state.key_bind_pressed(&modifiers, menu_control_keys["down"]) {
@@ -111,7 +111,7 @@ fn main() -> anyhow::Result<()> {
 
                             match status.code() {
                                 Some(code) => info!("GUI process exited with status code: {code}"),
-                                None => info!("GUI process terminated by signal")
+                                None => info!("GUI process terminated by signal"),
                             }
                         }
                         gui_stdin = None;
@@ -126,7 +126,7 @@ fn main() -> anyhow::Result<()> {
         }
     }
 
-    anyhow::Ok(())
+    Ok(())
 }
 
 fn handle_event(
@@ -207,5 +207,5 @@ fn handle_event(
         }
     }
 
-    anyhow::Ok(())
+    Ok(())
 }
