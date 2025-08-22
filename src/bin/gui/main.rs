@@ -1,5 +1,7 @@
+use anyhow::{Context, bail};
 use raylib::ffi::{Image, LoadImageFromMemory, LoadTextureFromImage, UnloadImage};
 use raylib::prelude::*;
+use tracing::{debug, error, info, trace, warn};
 
 use std::ffi::CString;
 use std::io::BufRead;
@@ -13,16 +15,30 @@ const WIN_H: i32 = 1080;
 
 static DEFAULT_ICON_DATA: &[u8] = include_bytes!("../../../resources/default.png");
 
-fn main() {
+fn main() -> anyhow::Result<()> {
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::INFO)
+        .init();
+
     let mut args = env::args_os().skip(1);
     let segments: usize = args
         .next()
-        .expect("GUI: Expected argument for number of segments")
+        .context("GUI: Expected argument for number of segments")?
         .to_string_lossy()
         .parse()
-        .expect("GUI: Failed to parse segments argument as usize");
+        .context("GUI: Failed to parse segments argument as usize")?;
 
     let mut highlight_idx: Option<usize> = None;
+
+    set_trace_log_callback(|lvl, msg| match lvl {
+        TraceLogLevel::LOG_ALL | TraceLogLevel::LOG_TRACE => trace!("{msg}"),
+        TraceLogLevel::LOG_DEBUG => debug!("{msg}"),
+        TraceLogLevel::LOG_INFO => info!("{msg}"),
+        TraceLogLevel::LOG_WARNING => warn!("{msg}"),
+        TraceLogLevel::LOG_ERROR => error!("{msg}"),
+        TraceLogLevel::LOG_FATAL => panic!("Raylib fatal error: {msg}"),
+        _ => info!("{msg}"),
+    })?;
 
     let (mut rl, thread) = raylib::init()
         .size(WIN_W, WIN_H)
@@ -39,15 +55,15 @@ fn main() {
 
     for path in icon_paths {
         let texture = if path == "default" {
-            load_default_icon(DEFAULT_ICON_DATA).expect("GUI: Failed to load default icon")
+            load_default_icon(DEFAULT_ICON_DATA)?
         } else {
             match rl.load_texture(&thread, &path) {
                 Ok(texture) => texture,
                 Err(err) => {
-                    eprintln!("WARNING: Failed to load icon `{}`: {}", path, err);
-                    eprintln!("WARNING: Falling back to default icon");
+                    warn!("GUI: Failed to load icon `{path}`: {err}");
+                    warn!("GUI: Falling back to default icon");
                     load_default_icon(DEFAULT_ICON_DATA)
-                        .expect("GUI: Failed to load default icon")
+                        .context("GUI: Failed to load default icon")?
                 }
             }
         };
@@ -81,6 +97,8 @@ fn main() {
             &icon_textures,
         );
     }
+
+    Ok(())
 }
 
 fn input_checker_thread() -> mpsc::Receiver<Option<usize>> {
@@ -89,36 +107,36 @@ fn input_checker_thread() -> mpsc::Receiver<Option<usize>> {
 
     thread::spawn(move || {
         for line in stdin.lock().lines() {
-            match line {
-                Ok(text) => {
-                    let trimmed = text.trim();
-                    if let Some(idx_str) = trimmed.to_uppercase().strip_prefix("HIGHLIGHT ") {
-                        let idx_str = idx_str.trim();
-                        if let Ok(idx) = idx_str.parse::<usize>() {
-                            let _ = tx.send(Some(idx));
-                        } else {
-                            eprintln!("GUI: WARN: Invalid index in `{trimmed}`");
-                        }
-                    } else if trimmed.eq_ignore_ascii_case("QUIT") {
-                        // Send none for exit
-                        let _ = tx.send(None);
-                    } else {
-                        eprintln!("GUI: WARN: Unexpected input `{trimmed}`");
-                    }
-                }
+            let text = match line {
+                Ok(t) => t,
                 Err(err) => {
-                    eprint!("GUI: Error reading stdin: {err}");
+                    warn!("GUI: Error reading stdin: {err}");
+                    continue;
                 }
+            };
+
+            let trimmed = text.trim();
+
+            if let Some(idx_str) = trimmed.to_uppercase().strip_prefix("HIGHLIGHT ") {
+                match idx_str.trim().parse::<usize>() {
+                    Ok(idx) => {
+                        let _ = tx.send(Some(idx));
+                    }
+                    Err(_) => warn!("GUI: Invalid index in `{trimmed}`"),
+                }
+            } else if trimmed.eq_ignore_ascii_case("QUIT") {
+                let _ = tx.send(None);
+            } else {
+                warn!("GUI: Unexpected input `{trimmed}`");
             }
         }
     });
 
     rx
 }
-
-pub fn load_default_icon(raw_icon_data: &[u8]) -> Result<Texture2D, String> {
-    let extension = CString::new(".png")
-        .map_err(|_| "Failed to convert file extension to CString".to_string())?;
+pub fn load_default_icon(raw_icon_data: &[u8]) -> anyhow::Result<Texture2D> {
+    let extension =
+        CString::new(".png").context("GUI: Failed to convert file extension to CString")?;
 
     let image: Image = unsafe {
         LoadImageFromMemory(
@@ -129,12 +147,14 @@ pub fn load_default_icon(raw_icon_data: &[u8]) -> Result<Texture2D, String> {
     };
 
     if image.data.is_null() {
-        return Err("Failed to load default icon from bytes".to_string());
+        bail!("GUI: Failed to load default icon from embedded PNG bytes");
     }
 
-    unsafe {
+    let texture = unsafe {
         let raw_texture = LoadTextureFromImage(image);
         UnloadImage(image);
-        Ok(Texture2D::from_raw(raw_texture))
-    }
+        Texture2D::from_raw(raw_texture)
+    };
+
+    Ok(texture)
 }

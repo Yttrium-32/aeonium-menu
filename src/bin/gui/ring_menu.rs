@@ -1,3 +1,4 @@
+use anyhow::ensure;
 use raylib::core::color::Color;
 use raylib::core::drawing::RaylibDraw;
 use raylib::drawing::RaylibDrawHandle;
@@ -14,9 +15,14 @@ pub fn draw(
     screen_w: f32,
     highlight: Option<usize>,
     segments: usize,
-    icon_textures: &[Texture2D]
-) {
-    assert_eq!(icon_textures.len(), segments, "ERR: icon_textures length mismatch");
+    icon_textures: &[Texture2D],
+) -> anyhow::Result<()> {
+    ensure!(
+        icon_textures.len() == segments,
+        "icon_textures length mismatch: {} != {}",
+        icon_textures.len(),
+        segments
+    );
 
     let center = Vector2::new(screen_w / 2.0, screen_h / 2.0);
     let outer_radius = screen_h.min(screen_w) * 0.25;
@@ -33,12 +39,13 @@ pub fn draw(
 
         let color = match highlight {
             Some(h_idx) => {
-                assert!(
+                ensure!(
                     h_idx < segments,
                     "hightlight index {} out of bounds for segments {}",
                     h_idx,
                     segments
                 );
+
                 if h_idx == idx {
                     COLOR_DARK_BLUE
                 } else {
@@ -65,11 +72,13 @@ pub fn draw(
             outer_radius,
             start_angle,
             end_angle,
-            icon_tex
+            icon_tex,
         );
 
         start_angle = end_angle + gap_angle;
     }
+
+    Ok(())
 }
 
 fn draw_icon(
