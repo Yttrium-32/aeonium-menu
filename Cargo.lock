@@ -7,6 +7,7 @@ name = "aeonium-menu"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "daemonize",
  "directories",
  "freedesktop-icons",
  "freedesktop_entry_parser",
@@ -108,6 +109,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e7caa3f9de89ddbe2c607f4101924c5abec803763ae9534e4f4d7d8f84aa81f0"
 dependencies = [
  "cc",
+]
+
+[[package]]
+name = "daemonize"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ab8bfdaacb3c887a54d41bdf48d3af8873b3f5566469f8ba21b92057509f116e"
+dependencies = [
+ "libc",
 ]
 
 [[package]]

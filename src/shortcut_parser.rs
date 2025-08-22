@@ -1,9 +1,13 @@
-use anyhow::{Context, bail};
-use freedesktop_entry_parser::parse_entry;
 use std::path::{Path, PathBuf};
+use std::process::Command;
+
+use anyhow::{Context, bail};
+use daemonize::Daemonize;
+use freedesktop_entry_parser::parse_entry;
 use tracing::warn;
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct DesktopFile {
     name: String,
     exec_path: PathBuf,
@@ -94,5 +98,19 @@ impl DesktopFile {
             exec_args: exec_args.iter().map(|&s| s.to_string()).collect(),
             icon,
         })
+    }
+
+    pub fn spawn_process(self) -> anyhow::Result<()> {
+        let daemonize = Daemonize::new()
+            .working_directory("/tmp");
+
+        daemonize.start().context("Failed to daemonize process")?;
+
+        Command::new(self.exec_path)
+            .args(self.exec_args)
+            .spawn()
+            .context("Failed to spawn child process")?;
+
+        Ok(())
     }
 }
