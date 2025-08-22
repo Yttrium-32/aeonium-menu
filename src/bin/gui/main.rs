@@ -95,7 +95,7 @@ fn main() -> anyhow::Result<()> {
             highlight_idx,
             segments,
             &icon_textures,
-        );
+        )?;
     }
 
     Ok(())
