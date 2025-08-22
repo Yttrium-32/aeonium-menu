@@ -1,10 +1,10 @@
+use std::os::unix::process::CommandExt;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Stdio};
 
 use anyhow::{Context, bail};
-use daemonize::Daemonize;
 use freedesktop_entry_parser::parse_entry;
-use tracing::warn;
+use tracing::{info, warn};
 
 #[derive(Debug)]
 #[allow(dead_code)]
@@ -100,16 +100,28 @@ impl DesktopFile {
         })
     }
 
-    pub fn spawn_process(self) -> anyhow::Result<()> {
-        let daemonize = Daemonize::new()
-            .working_directory("/tmp");
+    pub fn spawn_process(&self) -> anyhow::Result<()> {
+        let mut child_proc = Command::new(&self.exec_path);
 
-        daemonize.start().context("Failed to daemonize process")?;
+        child_proc.args(&self.exec_args)
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null());
 
-        Command::new(self.exec_path)
-            .args(self.exec_args)
+        unsafe {
+            child_proc.pre_exec(|| {
+                if libc::setsid() == -1 {
+                    return Err(std::io::Error::last_os_error());
+                }
+                Ok(())
+            });
+        }
+
+        child_proc
             .spawn()
-            .context("Failed to spawn child process")?;
+            .with_context(|| format!("Failed to spawn child process for {}", self.name))?;
+
+        info!("Succesfully spawned {}", self.name);
 
         Ok(())
     }
