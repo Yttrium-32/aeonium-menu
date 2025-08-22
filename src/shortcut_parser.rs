@@ -7,7 +7,6 @@ use freedesktop_entry_parser::parse_entry;
 use tracing::{info, warn};
 
 #[derive(Debug)]
-#[allow(dead_code)]
 pub struct DesktopFile {
     name: String,
     exec_path: PathBuf,
