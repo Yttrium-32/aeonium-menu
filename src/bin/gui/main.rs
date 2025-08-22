@@ -23,10 +23,10 @@ fn main() -> anyhow::Result<()> {
     let mut args = env::args_os().skip(1);
     let segments: usize = args
         .next()
-        .context("GUI: Expected argument for number of segments")?
+        .context("Expected argument for number of segments")?
         .to_string_lossy()
         .parse()
-        .context("GUI: Failed to parse segments argument as usize")?;
+        .context("Failed to parse segments argument as usize")?;
 
     let mut highlight_idx: Option<usize> = None;
 
@@ -60,10 +60,10 @@ fn main() -> anyhow::Result<()> {
             match rl.load_texture(&thread, &path) {
                 Ok(texture) => texture,
                 Err(err) => {
-                    warn!("GUI: Failed to load icon `{path}`: {err}");
-                    warn!("GUI: Falling back to default icon");
+                    warn!("Failed to load icon `{path}`: {err}");
+                    warn!("Falling back to default icon");
                     load_default_icon(DEFAULT_ICON_DATA)
-                        .context("GUI: Failed to load default icon")?
+                        .context("Failed to load default icon")?
                 }
             }
         };
@@ -110,7 +110,7 @@ fn input_checker_thread() -> mpsc::Receiver<Option<usize>> {
             let text = match line {
                 Ok(t) => t,
                 Err(err) => {
-                    warn!("GUI: Error reading stdin: {err}");
+                    warn!("Error reading stdin: {err}");
                     continue;
                 }
             };
@@ -122,12 +122,12 @@ fn input_checker_thread() -> mpsc::Receiver<Option<usize>> {
                     Ok(idx) => {
                         let _ = tx.send(Some(idx));
                     }
-                    Err(_) => warn!("GUI: Invalid index in `{trimmed}`"),
+                    Err(_) => warn!("Invalid index in `{trimmed}`"),
                 }
             } else if trimmed.eq_ignore_ascii_case("QUIT") {
                 let _ = tx.send(None);
             } else {
-                warn!("GUI: Unexpected input `{trimmed}`");
+                warn!("Unexpected input `{trimmed}`");
             }
         }
     });
@@ -137,7 +137,7 @@ fn input_checker_thread() -> mpsc::Receiver<Option<usize>> {
 
 pub fn load_default_icon(raw_icon_data: &[u8]) -> anyhow::Result<Texture2D> {
     let extension =
-        CString::new(".png").context("GUI: Failed to convert file extension to CString")?;
+        CString::new(".png").context("Failed to convert file extension to CString")?;
 
     let image: Image = unsafe {
         LoadImageFromMemory(
@@ -148,7 +148,7 @@ pub fn load_default_icon(raw_icon_data: &[u8]) -> anyhow::Result<Texture2D> {
     };
 
     if image.data.is_null() {
-        bail!("GUI: Failed to load default icon from embedded PNG bytes");
+        bail!("Failed to load default icon from embedded PNG bytes");
     }
 
     let texture = unsafe {
