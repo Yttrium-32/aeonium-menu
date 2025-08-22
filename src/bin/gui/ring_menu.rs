@@ -19,7 +19,7 @@ pub fn draw(
 ) -> anyhow::Result<()> {
     ensure!(
         icon_textures.len() == segments,
-        "icon_textures length mismatch: {} != {}",
+        "icon_textures length mismatch: {} icons != {} segments",
         icon_textures.len(),
         segments
     );
