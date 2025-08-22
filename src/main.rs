@@ -55,9 +55,7 @@ fn main() -> anyhow::Result<()> {
             }
         };
 
-        if !gui_state.tick(event, segments, &shortcut_files)? {
-            continue;
-        }
+        gui_state.tick(event, segments, &shortcut_files)?;
     }
 
     Ok(())

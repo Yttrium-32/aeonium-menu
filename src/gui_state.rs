@@ -38,7 +38,7 @@ impl GuiState {
         event: Option<EventType>,
         segments: usize,
         shortcut_files: &[DesktopFile],
-    ) -> anyhow::Result<bool> {
+    ) -> anyhow::Result<()> {
         match event {
             Some(event) => {
                 self.handle_event(event, segments, shortcut_files)?;
@@ -47,7 +47,7 @@ impl GuiState {
                     writeln!(stdin, "HIGHLIGHT {}", idx).context("Failed to write GUI stdin")?;
                     stdin.flush().context("Failed to flush stdin")?;
                 }
-                Ok(true)
+                Ok(())
             }
 
             None => {
@@ -65,10 +65,9 @@ impl GuiState {
                             }
                         }
                         self.gui_stdin = None;
-                        return Ok(false);
                     }
                 }
-                Ok(true)
+                Ok(())
             }
         }
     }
