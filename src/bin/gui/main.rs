@@ -134,6 +134,7 @@ fn input_checker_thread() -> mpsc::Receiver<Option<usize>> {
 
     rx
 }
+
 pub fn load_default_icon(raw_icon_data: &[u8]) -> anyhow::Result<Texture2D> {
     let extension =
         CString::new(".png").context("GUI: Failed to convert file extension to CString")?;

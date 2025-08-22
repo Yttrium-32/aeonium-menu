@@ -1,22 +1,20 @@
 use std::collections::{HashMap, HashSet};
 use std::result::Result::Ok;
 use std::sync::mpsc::{self, RecvTimeoutError};
-use std::time::Duration;
 use std::thread;
+use std::time::Duration;
 
-use anyhow::Context;
 use directories::ProjectDirs;
 use gui_state::GuiState;
-use input::Libinput;
 use tracing::{error, info};
 
-use crate::libinput_events::{InputState, Interface, KeyCode};
-use crate::shortcut_parser::get_shortcuts;
 use crate::gui_state::EventType;
+use crate::libinput_events::KeyCode;
+use crate::shortcut_parser::get_shortcuts;
 
+mod gui_state;
 mod libinput_events;
 mod shortcut_parser;
-mod gui_state;
 mod utils;
 
 fn main() -> anyhow::Result<()> {
@@ -40,31 +38,9 @@ fn main() -> anyhow::Result<()> {
 
     let (tx, rx) = mpsc::channel();
 
-    // Spawn input checker thread
     thread::spawn(move || -> anyhow::Result<()> {
-        let mut libinput = Libinput::new_with_udev(Interface);
-        libinput.udev_assign_seat("seat0").unwrap();
-        let mut state = InputState::new();
-
-        loop {
-            state.update(&mut libinput);
-
-            if state.key_bind_pressed(&modifiers, menu_control_keys["up"]) {
-                tx.send(EventType::MenuUp)
-                    .context("Failed to send MenuUp event")?;
-            }
-
-            if state.key_bind_pressed(&modifiers, menu_control_keys["down"]) {
-                tx.send(EventType::MenuDown)
-                    .context("Failed to send MenuDown event")?;
-            }
-
-            let delta = state.scrolled(&modifiers);
-            if delta != 0 {
-                tx.send(EventType::Scroll(delta))
-                    .context(format!("Failed to send Scroll event with delta {}", delta))?;
-            }
-        }
+        libinput_events::run_input_checker(tx, &modifiers, menu_control_keys)?;
+        Ok(())
     });
 
     let mut gui_state = GuiState::new();

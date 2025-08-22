@@ -1,15 +1,19 @@
-use input::event::{
-    Event, PointerEvent,
-    keyboard::{KeyState, KeyboardEventTrait},
-    pointer::{Axis, PointerScrollEvent},
-};
-use input::{Libinput, LibinputInterface};
-use libc::{O_ACCMODE, O_RDONLY, O_RDWR, O_WRONLY};
-use num_enum::TryFromPrimitive;
-use std::collections::HashSet;
+use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 use std::os::unix::{fs::OpenOptionsExt, io::OwnedFd};
 use std::path::Path;
+use std::sync::mpsc::Sender;
+use std::collections::HashSet;
+
+use anyhow::Context;
+use input::event::keyboard::{KeyState, KeyboardEventTrait};
+use input::event::pointer::{Axis, PointerScrollEvent};
+use input::event::{Event, PointerEvent};
+use input::{Libinput, LibinputInterface};
+use libc::{O_ACCMODE, O_RDONLY, O_RDWR, O_WRONLY};
+use num_enum::TryFromPrimitive;
+
+use crate::EventType;
 
 #[allow(non_camel_case_types)]
 #[repr(u32)]
@@ -195,8 +199,7 @@ impl InputState {
     }
 
     pub fn key_bind_pressed(&self, modifiers: &HashSet<KeyCode>, main: KeyCode) -> bool {
-        modifiers.iter().all(|m| self.pressed_keys.contains(m))
-            && self.just_pressed.contains(&main)
+        modifiers.iter().all(|m| self.pressed_keys.contains(m)) && self.just_pressed.contains(&main)
     }
 
     pub fn scrolled(&self, modifiers: &HashSet<KeyCode>) -> i32 {
@@ -204,6 +207,36 @@ impl InputState {
             self.wheel_delta
         } else {
             0
+        }
+    }
+}
+
+pub fn run_input_checker(
+    tx: Sender<EventType>,
+    modifiers: &HashSet<KeyCode>,
+    menu_control_keys: HashMap<&str, KeyCode>,
+) -> anyhow::Result<()> {
+    let mut libinput = Libinput::new_with_udev(Interface);
+    libinput.udev_assign_seat("seat0").unwrap();
+    let mut state = InputState::new();
+
+    loop {
+        state.update(&mut libinput);
+
+        if state.key_bind_pressed(modifiers, menu_control_keys["up"]) {
+            tx.send(EventType::MenuUp)
+                .context("Failed to send MenuUp event")?;
+        }
+
+        if state.key_bind_pressed(modifiers, menu_control_keys["down"]) {
+            tx.send(EventType::MenuDown)
+                .context("Failed to send MenuDown event")?;
+        }
+
+        let delta = state.scrolled(modifiers);
+        if delta != 0 {
+            tx.send(EventType::Scroll(delta))
+                .context(format!("Failed to send Scroll event with delta {}", delta))?;
         }
     }
 }
