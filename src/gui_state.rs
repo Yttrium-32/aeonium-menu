@@ -51,10 +51,15 @@ impl GuiState {
             }
 
             None => {
-                if let (Some(start), Some(stdin)) = (self.idle_duration, self.gui_stdin.as_mut()) {
+                if let (Some(start), Some(stdin), Some(idx)) = (
+                    self.idle_duration,
+                    self.gui_stdin.as_mut(),
+                    self.highlight_idx,
+                ) {
                     if start.elapsed() > Duration::from_secs(1) {
                         writeln!(stdin, "QUIT").context("Failed to write GUI stdin")?;
                         self.idle_duration = None;
+                        shortcut_files[idx].spawn_process()?;
 
                         if let Some(mut child) = self.gui_process.take() {
                             let status = child.wait().context("Failed to wait for GUI process")?;
