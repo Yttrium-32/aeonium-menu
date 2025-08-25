@@ -6,7 +6,7 @@ use std::time::Duration;
 
 use directories::ProjectDirs;
 use gui_state::GuiState;
-use tracing::{error, info};
+use tracing::error;
 
 use crate::gui_state::EventType;
 use crate::libinput_events::KeyCode;
@@ -23,8 +23,6 @@ fn main() -> anyhow::Result<()> {
         .init();
 
     let proj_dirs = ProjectDirs::from("", "", "aeonium-menu").expect("No home directory found");
-    let config_dir = proj_dirs.config_dir();
-    info!("Found config directory: {}", config_dir.display());
 
     let modifiers: HashSet<KeyCode> = vec![KeyCode::KEY_LEFTCTRL, KeyCode::KEY_LEFTSHIFT]
         .into_iter()
@@ -33,7 +31,7 @@ fn main() -> anyhow::Result<()> {
     let menu_control_keys: HashMap<&str, KeyCode> =
         HashMap::from([("up", KeyCode::KEY_F10), ("down", KeyCode::KEY_F9)]);
 
-    let shortcut_files = get_shortcuts(config_dir)?;
+    let shortcut_files = get_shortcuts(proj_dirs)?;
     let segments = shortcut_files.len();
 
     let (tx, rx) = mpsc::channel();

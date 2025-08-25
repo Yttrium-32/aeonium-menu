@@ -1,8 +1,10 @@
+use std::env;
 use std::os::unix::process::CommandExt;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
 use anyhow::{Context, bail};
+use directories::ProjectDirs;
 use freedesktop_entry_parser::parse_entry;
 use tracing::{info, warn};
 
@@ -14,18 +16,21 @@ pub struct DesktopFile {
     pub icon: Option<PathBuf>,
 }
 
-pub fn get_shortcuts(config_dir: impl AsRef<Path>) -> anyhow::Result<Vec<DesktopFile>> {
-    let config_dir = config_dir.as_ref();
+pub fn get_shortcuts(proj_dirs: ProjectDirs) -> anyhow::Result<Vec<DesktopFile>> {
+    let config_dir = proj_dirs.config_dir();
+    info!("Found config directory: {}", config_dir.display());
 
     let mut desktop_files = Vec::new();
 
-    let shortcuts_dir = config_dir.join("shortcuts");
-    if !shortcuts_dir.exists() {
-        bail!(
-            "Shortcuts directory does not exist: {}",
-            shortcuts_dir.display()
-        );
-    }
+    let shortcuts_dir = if config_dir.join("shortcuts").exists() {
+        config_dir.join("shortcuts")
+    } else {
+        PathBuf::from(
+            env::var("HOME")
+                .context("HOME not set, cannot fallback to ~/.local/share/applications")?,
+        )
+        .join(".local/share/applications")
+    };
 
     let entries = std::fs::read_dir(&shortcuts_dir).with_context(|| {
         format!(
@@ -102,7 +107,8 @@ impl DesktopFile {
     pub fn spawn_process(&self) -> anyhow::Result<()> {
         let mut child_proc = Command::new(&self.exec_path);
 
-        child_proc.args(&self.exec_args)
+        child_proc
+            .args(&self.exec_args)
             .stdin(Stdio::null())
             .stdout(Stdio::null())
             .stderr(Stdio::null());
