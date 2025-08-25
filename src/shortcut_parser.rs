@@ -6,6 +6,7 @@ use std::process::{Command, Stdio};
 use anyhow::{Context, bail};
 use directories::ProjectDirs;
 use freedesktop_entry_parser::parse_entry;
+use freedesktop_icons::lookup;
 use tracing::{info, warn};
 
 #[derive(Debug)]
@@ -85,16 +86,23 @@ impl DesktopFile {
             .split_first()
             .with_context(|| format!("`Exec` field in {} is empty", file_path.display()))?;
 
-        let icon = match desktop_section.attr("Icon") {
-            Some(field) => Some(PathBuf::from(field)),
-            None => {
-                tracing::warn!(
-                    "No `Icon` field in {}, falling back to default",
-                    file_path.display()
-                );
-                None
-            }
-        };
+        let icon = desktop_section.attr("Icon").and_then(|field| {
+            lookup(field)
+                .with_size(512)
+                .with_cache()
+                .find()
+                .or_else(|| {
+                    warn!("Icon doesn't exist: {}", field);
+                    None
+                })
+        });
+
+        if icon.is_none() {
+            warn!(
+                "No `Icon` field in {}, falling back to default",
+                file_path.display()
+            );
+        }
 
         Ok(Self {
             name: name.to_string(),
