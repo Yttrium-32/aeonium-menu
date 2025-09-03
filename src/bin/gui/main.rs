@@ -17,7 +17,7 @@ static DEFAULT_ICON_DATA: &[u8] = include_bytes!("../../../resources/default.png
 
 fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::INFO)
+        .with_max_level(tracing::Level::WARN)
         .init();
 
     let mut args = env::args_os().skip(1);

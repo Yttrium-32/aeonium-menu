@@ -11,18 +11,21 @@ use tracing::error;
 use crate::gui_state::EventType;
 use crate::libinput_events::KeyCode;
 use crate::shortcut_parser::get_shortcuts;
+use crate::config::Config;
 
 mod gui_state;
 mod libinput_events;
 mod shortcut_parser;
 mod utils;
+mod config;
 
 fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::INFO)
+        .with_max_level(tracing::Level::WARN)
         .init();
 
     let proj_dirs = ProjectDirs::from("", "", "aeonium-menu").expect("No home directory found");
+    let config_vals = Config::parse(&proj_dirs)?;
 
     let modifiers: HashSet<KeyCode> = vec![KeyCode::KEY_LEFTCTRL, KeyCode::KEY_LEFTSHIFT]
         .into_iter()
@@ -44,7 +47,7 @@ fn main() -> anyhow::Result<()> {
     let mut gui_state = GuiState::new();
 
     loop {
-        let event = match rx.recv_timeout(Duration::from_millis(100)) {
+        let event = match rx.recv_timeout(Duration::from_millis(config_vals.timeout)) {
             Ok(e) => Some(e),
             Err(RecvTimeoutError::Timeout) => None,
             Err(RecvTimeoutError::Disconnected) => {
