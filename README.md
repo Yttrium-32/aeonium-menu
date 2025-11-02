@@ -1,4 +1,8 @@
-# Aeonium Menu
+<div align="center">
+   <img src="assets/logo.png" width="120" alt="Aeonium Logo" />
+</div>
+
+<h1 align="center">Aeonium Menu</h1>
 
 > [!WARNING]
 > This project is under heavy development. Many features are incomplete and things will break often. Use at your own risk.
@@ -57,6 +61,7 @@ cargo run
   - <kbd>F10</kbd>: Move up
   - Scroll with the mouse wheel or encoder knob
 
-### Credits for logo
-behance.net/somdu77a
-x.com/somdu77a
+## Logo Credits
+#### Designed by somdu77a:
+- [behance.net/somdu77a](behance.net/somdu77a)
+- [x.com/somdu77a](x.com/somdu77a)
