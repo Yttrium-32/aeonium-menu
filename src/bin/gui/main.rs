@@ -13,7 +13,7 @@ mod ring_menu;
 const WIN_W: i32 = 1920;
 const WIN_H: i32 = 1080;
 
-static DEFAULT_ICON_DATA: &[u8] = include_bytes!("../../../resources/default.png");
+static DEFAULT_ICON_DATA: &[u8] = include_bytes!("../../../assets/default.png");
 
 fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt()
