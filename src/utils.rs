@@ -1,6 +1,7 @@
 use std::env;
 use std::path::PathBuf;
 
+// TODO: find a better way to do this
 pub fn find_binary(name: &str) -> PathBuf {
     let profile = env::var("PROFILE").unwrap_or_else(|_| "debug".into());
 
