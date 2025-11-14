@@ -22,7 +22,7 @@ The name of this project is taken from flowers of the same name.
 - [ ] Systray Icon
 - [ ] Heavy customisability
 - [ ] Configuration menu
-- [ ] Integration with systemd and openrc
+- [ ] Integration with systemd
 
 ## Build Instructions
 
@@ -46,7 +46,7 @@ cargo run
 > All key binds are currently hard-coded. Configuration is not yet implemented.
 
 ### Requirements
-- The user running the application **must be added to the `input` group** to
+- The user running the application must be added to the `input` group to
   allow global key bind and scroll detection through `libinput`.
 - Add your `.desktop` shortcuts to `~/.config/aeonium-menu/shortcuts/`
 
