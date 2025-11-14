@@ -19,13 +19,19 @@ mod shortcut_parser;
 mod utils;
 mod config;
 
-fn main() -> anyhow::Result<()> {
+fn main() {
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::WARN)
         .init();
 
     let proj_dirs = ProjectDirs::from("", "", "aeonium-menu").expect("No home directory found");
-    let config_vals = Config::parse(&proj_dirs)?;
+    let config_vals = match Config::parse(&proj_dirs) {
+        Ok(val) => val,
+        Err(e) => {
+            error!("Fatal error: {:?}", e);
+            std::process::exit(1);
+        }
+    };
 
     let modifiers: HashSet<KeyCode> = vec![KeyCode::KEY_LEFTCTRL, KeyCode::KEY_LEFTSHIFT]
         .into_iter()
@@ -34,30 +40,39 @@ fn main() -> anyhow::Result<()> {
     let menu_control_keys: HashMap<&str, KeyCode> =
         HashMap::from([("up", KeyCode::KEY_F10), ("down", KeyCode::KEY_F9)]);
 
-    let shortcut_files = get_shortcuts(proj_dirs)?;
+    let shortcut_files = match get_shortcuts(proj_dirs) {
+        Ok(val) => val,
+        Err(e) => {
+            tracing::error!("Fatal Error: {:?}", e);
+            std::process::exit(1);
+        }
+    };
     let segments = shortcut_files.len();
 
     let (tx, rx) = mpsc::channel();
 
-    thread::spawn(move || -> anyhow::Result<()> {
-        libinput_events::run_input_checker(tx, &modifiers, menu_control_keys)?;
-        Ok(())
+    thread::spawn(move || {
+        if let Err(e) = libinput_events::run_input_checker(tx, &modifiers, menu_control_keys) {
+            tracing::error!("Fatal Error: {:?}", e);
+            std::process::exit(1);
+        };
     });
 
     let mut gui_state = GuiState::new();
 
     loop {
         let event = match rx.recv_timeout(Duration::from_millis(config_vals.timeout)) {
-            Ok(e) => Some(e),
+            Ok(ev) => Some(ev),
             Err(RecvTimeoutError::Timeout) => None,
             Err(RecvTimeoutError::Disconnected) => {
-                error!("Input checker thread broken");
-                break;
+                error!("Fatal Error: Input checker thread broken");
+                std::process::exit(1);
             }
         };
 
-        gui_state.tick(event, segments, &shortcut_files)?;
+        if let Err(e) = gui_state.tick(event, segments, &shortcut_files) {
+            error!("Fatal error: {:?}", e);
+            std::process::exit(1);
+        };
     }
-
-    Ok(())
 }
