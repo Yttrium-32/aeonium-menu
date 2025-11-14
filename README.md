@@ -23,6 +23,7 @@ The name of this project is taken from flowers of the same name.
 - [ ] Heavy customisability
 - [ ] Configuration menu
 - [ ] Integration with systemd
+- [ ] Wayland support
 
 ## Build Instructions
 
