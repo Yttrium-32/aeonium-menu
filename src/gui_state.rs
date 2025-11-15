@@ -9,7 +9,6 @@ use directories::ProjectDirs;
 use tracing::info;
 
 use crate::shortcut_parser::DesktopFile;
-use crate::utils::find_binary;
 
 #[derive(Debug)]
 pub enum EventType {
