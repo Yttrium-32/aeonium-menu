@@ -24,14 +24,15 @@ fn main() {
         .with_max_level(tracing::Level::WARN)
         .init();
 
-    let proj_dirs = ProjectDirs::from("", "", "aeonium-menu").expect("No home directory found");
-    let config_vals = match Config::parse(&proj_dirs) {
-        Ok(val) => val,
-        Err(e) => {
+    let proj_dirs = ProjectDirs::from("", "", "aeonium-menu").unwrap_or_else(|| {
+            error!("Fatal error: Home directory not found");
+            std::process::exit(1);
+    });
+
+    let config_vals = Config::parse(&proj_dirs).unwrap_or_else(|e| {
             error!("Fatal error: {:?}", e);
             std::process::exit(1);
-        }
-    };
+    });
 
     let modifiers: HashSet<KeyCode> = vec![KeyCode::KEY_LEFTCTRL, KeyCode::KEY_LEFTSHIFT]
         .into_iter()
@@ -40,13 +41,10 @@ fn main() {
     let menu_control_keys: HashMap<&str, KeyCode> =
         HashMap::from([("up", KeyCode::KEY_F10), ("down", KeyCode::KEY_F9)]);
 
-    let shortcut_files = match get_shortcuts(proj_dirs) {
-        Ok(val) => val,
-        Err(e) => {
+    let shortcut_files = get_shortcuts(proj_dirs).unwrap_or_else(|e| {
             tracing::error!("Fatal Error: {:?}", e);
             std::process::exit(1);
-        }
-    };
+    });
     let segments = shortcut_files.len();
 
     let (tx, rx) = mpsc::channel();
