@@ -17,7 +17,7 @@ pub struct DesktopFile {
     pub icon: Option<PathBuf>,
 }
 
-pub fn get_shortcuts(proj_dirs: ProjectDirs) -> anyhow::Result<Vec<DesktopFile>> {
+pub fn get_shortcuts(proj_dirs: &ProjectDirs) -> anyhow::Result<Vec<DesktopFile>> {
     let config_dir = proj_dirs.config_dir();
     info!("Found config directory: {}", config_dir.display());
 

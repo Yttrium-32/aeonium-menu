@@ -1,9 +1,11 @@
 use std::cmp::Ordering;
 use std::io::Write;
+use std::path::PathBuf;
 use std::process::{Child, ChildStdin, Command, Stdio};
 use std::time::{Duration, Instant};
 
 use anyhow::Context;
+use directories::ProjectDirs;
 use tracing::info;
 
 use crate::shortcut_parser::DesktopFile;
@@ -21,15 +23,19 @@ pub struct GuiState {
     gui_stdin: Option<ChildStdin>,
     highlight_idx: Option<usize>,
     idle_duration: Option<Instant>,
+    config_dir: PathBuf,
+    data_dir: PathBuf,
 }
 
 impl GuiState {
-    pub fn new() -> Self {
+    pub fn new(proj_dirs: &ProjectDirs) -> Self {
         GuiState {
             gui_process: None,
             gui_stdin: None,
             highlight_idx: None,
             idle_duration: None,
+            config_dir: proj_dirs.config_dir().to_path_buf(),
+            data_dir: proj_dirs.data_dir().to_path_buf()
         }
     }
 
@@ -87,7 +93,8 @@ impl GuiState {
             EventType::MenuUp | EventType::MenuDown | EventType::Scroll(_)
                 if self.gui_process.is_none() =>
             {
-                let gui_exe_path = find_binary("gui");
+                let gui_exe_path = self.data_dir.join("aeonium-gui");
+                info!("Looking for GUI exe at {:?}", gui_exe_path);
 
                 let mut cmd = Command::new(gui_exe_path);
                 cmd.arg(segments.to_string());

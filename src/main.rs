@@ -21,10 +21,10 @@ mod config;
 
 fn main() {
     tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::WARN)
+        .with_max_level(tracing::Level::DEBUG)
         .init();
 
-    let proj_dirs = ProjectDirs::from("", "", "aeonium-menu").unwrap_or_else(|| {
+    let proj_dirs = ProjectDirs::from("", "", "aeonium").unwrap_or_else(|| {
             error!("Fatal error: Home directory not found");
             std::process::exit(1);
     });
@@ -41,7 +41,7 @@ fn main() {
     let menu_control_keys: HashMap<&str, KeyCode> =
         HashMap::from([("up", KeyCode::KEY_F10), ("down", KeyCode::KEY_F9)]);
 
-    let shortcut_files = get_shortcuts(proj_dirs).unwrap_or_else(|e| {
+    let shortcut_files = get_shortcuts(&proj_dirs).unwrap_or_else(|e| {
             tracing::error!("Fatal Error: {:?}", e);
             std::process::exit(1);
     });
@@ -56,7 +56,7 @@ fn main() {
         };
     });
 
-    let mut gui_state = GuiState::new();
+    let mut gui_state = GuiState::new(&proj_dirs);
 
     loop {
         let event = match rx.recv_timeout(Duration::from_millis(config_vals.timeout)) {
