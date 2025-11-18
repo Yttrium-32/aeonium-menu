@@ -6,7 +6,7 @@ use std::path::Path;
 use std::sync::mpsc::Sender;
 use std::collections::HashSet;
 
-use anyhow::Context;
+use anyhow::{Context, anyhow};
 use input::event::keyboard::{KeyState, KeyboardEventTrait};
 use input::event::pointer::{Axis, PointerScrollEvent};
 use input::event::{Event, PointerEvent};
@@ -222,11 +222,13 @@ pub fn run_input_checker(
 
     let fd = libinput.as_raw_fd();
 
-    // Safety: libinput owns the fd and it remains valid while the variable `libinput` lives
+    // Safety: `libinput` owns the fd and it remains valid while the variable `libinput` lives
     let borrowed_fd: BorrowedFd<'_> = unsafe { BorrowedFd::borrow_raw(fd) };
     let mut fds = [PollFd::new(borrowed_fd, PollFlags::POLLIN)];
 
-    libinput.udev_assign_seat("seat0").unwrap();
+    libinput
+        .udev_assign_seat("seat0")
+        .map_err(|_| anyhow!("Failed to assign seat0"))?;
 
     let mut state = InputState::new();
 
