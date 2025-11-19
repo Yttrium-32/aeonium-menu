@@ -35,7 +35,7 @@ pub fn get_shortcuts(proj_dirs: &ProjectDirs) -> anyhow::Result<Vec<DesktopFile>
 
     let mut desktop_files = Vec::new();
 
-    let shortcuts_dir = if config_dir.join("shortcuts").exists() {
+    let shortcuts_dir = if config_dir.join("shortcuts").is_dir() {
         config_dir.join("shortcuts")
     } else {
         PathBuf::from(
@@ -128,7 +128,7 @@ impl DesktopFile {
             if is_svg(icon_data) {
                 info!("Icon {} is a SVG file, rasterising...", icon_path.display());
                 let cache_dir = proj_dirs.cache_dir();
-                if !cache_dir.exists() {
+                if !cache_dir.is_dir() {
                     info!(
                         "Cache dir {} doesn't exist, creating...",
                         cache_dir.display()
@@ -136,7 +136,7 @@ impl DesktopFile {
                     fs::create_dir_all(cache_dir)?;
                 }
                 let png_path = cache_dir.join(format!("{}.png", stem));
-                if !png_path.exists() {
+                if !png_path.is_dir() {
                     convert_to_svg(icon_path, &png_path)?;
                     info!("Wrote cached icon to {}", png_path.display());
                 } else {

@@ -33,7 +33,7 @@ impl Config {
         let config_dir = proj_dirs.config_dir();
         let config_file_path = config_dir.join("config.toml");
 
-        if !config_dir.exists() {
+        if !config_dir.is_dir() {
             info!("Config dir doesn't exit, creating...");
             fs::create_dir_all(config_dir)?;
         }
