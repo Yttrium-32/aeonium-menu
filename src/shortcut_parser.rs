@@ -9,7 +9,7 @@ use freedesktop_entry_parser::parse_entry;
 use freedesktop_icons::lookup;
 use tracing::{info, warn};
 
-use crate::utils::{convert_to_svg, is_svg, filter_discord_desktop_files};
+use crate::utils::{clean_exec_field, convert_to_svg, filter_discord_desktop_files, is_svg};
 
 #[derive(Debug)]
 pub struct DesktopFile {
@@ -84,7 +84,9 @@ impl DesktopFile {
             .attr("Exec")
             .with_context(|| format!("No `Exec` section found in {}", file_path.display()))?;
 
-        let total_exec_cmd: Vec<&str> = exec_attr.split_whitespace().collect();
+        let clean_exec_attr = clean_exec_field(exec_attr);
+
+        let total_exec_cmd: Vec<&str> = clean_exec_attr.split_whitespace().collect();
         let (exec_path, exec_args) = total_exec_cmd
             .split_first()
             .with_context(|| format!("`Exec` field in {} is empty", file_path.display()))?;
@@ -145,6 +147,11 @@ impl DesktopFile {
     }
 
     pub fn spawn_process(&self) -> anyhow::Result<()> {
+        info!(
+            "Attempting to spawn {} with args {:?}",
+            self.exec_path.display(),
+            self.exec_args
+        );
         let mut child_proc = Command::new(&self.exec_path);
 
         child_proc

@@ -50,3 +50,17 @@ pub fn filter_discord_desktop_files(desktop_files: &Path) -> bool {
         true
     }
 }
+
+// TODO: Comply with free desktop specification instead of ignoring it
+pub fn clean_exec_field(exec_field: &str) -> String {
+    let mut out = String::new();
+    let mut exec_field_iter = exec_field.chars();
+    while let Some(c) = exec_field_iter.next() {
+        if c == '%' {
+            exec_field_iter.next();
+            continue;
+        }
+        out.push(c);
+    }
+    out
+}
