@@ -1,4 +1,4 @@
-.PHONY: all build install gui menu
+.PHONY: build clean install gui menu help
 
 DATA_DIR := $(HOME)/.local/share/aeonium
 BIN_INSTALL_DIR := $(HOME)/.local/bin
@@ -12,10 +12,10 @@ install: build
 	install -Dm755 ./target/release/aeonium-menu $(BIN_INSTALL_DIR)/aeonium-menu
 	@echo "Installed aeonium-menu to $(BIN_INSTALL_DIR)"
 
-gui:
+menu:
 	cargo build --release --bin aeonium-menu
 
-menu:
+gui:
 	cargo build --release --bin aeonium-gui
 
 clean:
