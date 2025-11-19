@@ -120,7 +120,9 @@ impl DesktopFile {
                     fs::create_dir_all(cache_dir)?;
                 }
                 let png_path = cache_dir.join(format!("{}.png", stem));
-                convert_to_svg(icon_path, &png_path)?;
+                if !png_path.exists() {
+                    convert_to_svg(icon_path, &png_path)?;
+                }
                 icon = Some(png_path);
             }
         }
