@@ -19,6 +19,16 @@ pub struct DesktopFile {
     pub icon: Option<PathBuf>,
 }
 
+#[inline]
+fn filter_discord_desktop_files(desktop_files: &Path) -> bool {
+    let Some(stem) = desktop_files.file_stem().and_then(|s| s.to_str()) else {return true};
+    if let Some(rest) = stem.strip_prefix("discord-") {
+        !rest.chars().all(|c| c.is_ascii_digit())
+    } else {
+        true
+    }
+}
+
 pub fn get_shortcuts(proj_dirs: &ProjectDirs) -> anyhow::Result<Vec<DesktopFile>> {
     let config_dir = proj_dirs.config_dir();
     info!("Found config directory: {}", config_dir.display());
@@ -46,6 +56,7 @@ pub fn get_shortcuts(proj_dirs: &ProjectDirs) -> anyhow::Result<Vec<DesktopFile>
         .flatten()
         .filter(|entry| entry.path().extension().and_then(|ext| ext.to_str()) == Some("desktop"))
         .map(|entry| entry.path())
+        .filter(|path| filter_discord_desktop_files(path))
         .collect();
 
     if desktop_paths.is_empty() {
