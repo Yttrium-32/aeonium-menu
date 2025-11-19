@@ -42,7 +42,7 @@ fn main() {
         HashMap::from([("up", KeyCode::KEY_F10), ("down", KeyCode::KEY_F9)]);
 
     let shortcut_files = get_shortcuts(&proj_dirs).unwrap_or_else(|e| {
-            tracing::error!("Fatal Error: {:?}", e);
+            error!("Fatal Error: {:?}", e);
             std::process::exit(1);
     });
     let segments = shortcut_files.len();
@@ -51,7 +51,7 @@ fn main() {
 
     thread::spawn(move || {
         if let Err(e) = libinput_events::run_input_checker(tx, &modifiers, menu_control_keys) {
-            tracing::error!("Fatal Error: {:?}", e);
+            error!("Fatal Error: {:?}", e);
             std::process::exit(1);
         };
     });

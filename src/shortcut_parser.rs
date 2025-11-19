@@ -59,7 +59,7 @@ pub fn get_shortcuts(proj_dirs: &ProjectDirs) -> anyhow::Result<Vec<DesktopFile>
         match DesktopFile::new(&path, proj_dirs) {
             Ok(desktop_file) => desktop_files.push(desktop_file),
             Err(e) => {
-                warn!("Failed to parse desktop file {}: {e}", path.display());
+                warn!("Error parsing {}: {e}", path.display());
             }
         }
     }
