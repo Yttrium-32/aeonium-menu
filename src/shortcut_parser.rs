@@ -115,13 +115,21 @@ impl DesktopFile {
                 .with_context(|| format!("Failed to read from `{:?}`", icon_path))?;
 
             if is_svg(icon_data) {
+                info!("Icon {} is a SVG file, rasterising...", icon_path.display());
                 let cache_dir = proj_dirs.cache_dir();
                 if !cache_dir.exists() {
+                    info!(
+                        "Cache dir {} doesn't exist, creating...",
+                        cache_dir.display()
+                    );
                     fs::create_dir_all(cache_dir)?;
                 }
                 let png_path = cache_dir.join(format!("{}.png", stem));
                 if !png_path.exists() {
                     convert_to_svg(icon_path, &png_path)?;
+                    info!("Wrote cached icon to {}", png_path.display());
+                } else {
+                    info!("Cached icon {} already exists", png_path.display());
                 }
                 icon = Some(png_path);
             }
