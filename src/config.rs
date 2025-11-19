@@ -3,7 +3,7 @@ use std::io::Write;
 use std::path::Path;
 
 use anyhow::Ok;
-use tracing::warn;
+use tracing::{warn, info};
 use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
 
@@ -30,7 +30,14 @@ fn create_default_config(file_path: &Path) -> anyhow::Result<()> {
 
 impl Config {
     pub fn parse(proj_dirs: &ProjectDirs) -> anyhow::Result<Self> {
-        let config_file_path = proj_dirs.config_dir().join("config.toml");
+        let config_dir = proj_dirs.config_dir();
+        let config_file_path = config_dir.join("config.toml");
+
+        if !config_dir.exists() {
+            info!("Config dir doesn't exit, creating...");
+            fs::create_dir_all(config_dir)?;
+        }
+
         if !config_file_path.is_file() {
             warn!("Config file not found, creating default config...");
             create_default_config(&config_file_path)?;
