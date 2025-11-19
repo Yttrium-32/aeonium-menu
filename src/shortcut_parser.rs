@@ -9,7 +9,7 @@ use freedesktop_entry_parser::parse_entry;
 use freedesktop_icons::lookup;
 use tracing::{info, warn};
 
-use crate::svg_utils::{convert_to_svg, is_svg};
+use crate::utils::{convert_to_svg, is_svg, filter_discord_desktop_files};
 
 #[derive(Debug)]
 pub struct DesktopFile {
@@ -17,16 +17,6 @@ pub struct DesktopFile {
     exec_path: PathBuf,
     exec_args: Vec<String>,
     pub icon: Option<PathBuf>,
-}
-
-#[inline]
-fn filter_discord_desktop_files(desktop_files: &Path) -> bool {
-    let Some(stem) = desktop_files.file_stem().and_then(|s| s.to_str()) else {return true};
-    if let Some(rest) = stem.strip_prefix("discord-") {
-        !rest.chars().all(|c| c.is_ascii_digit())
-    } else {
-        true
-    }
 }
 
 pub fn get_shortcuts(proj_dirs: &ProjectDirs) -> anyhow::Result<Vec<DesktopFile>> {

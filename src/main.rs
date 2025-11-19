@@ -16,7 +16,7 @@ use crate::config::Config;
 mod gui_state;
 mod libinput_events;
 mod shortcut_parser;
-mod svg_utils;
+mod utils;
 mod config;
 
 fn main() {
