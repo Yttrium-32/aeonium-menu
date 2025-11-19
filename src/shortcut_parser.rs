@@ -1,13 +1,15 @@
-use std::env;
 use std::os::unix::process::CommandExt;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+use std::{env, fs};
 
 use anyhow::{Context, bail};
 use directories::ProjectDirs;
 use freedesktop_entry_parser::parse_entry;
 use freedesktop_icons::lookup;
 use tracing::{info, warn};
+
+use crate::svg_utils::{convert_to_svg, is_svg};
 
 #[derive(Debug)]
 pub struct DesktopFile {
@@ -54,7 +56,7 @@ pub fn get_shortcuts(proj_dirs: &ProjectDirs) -> anyhow::Result<Vec<DesktopFile>
     }
 
     for path in desktop_paths {
-        match DesktopFile::new(&path) {
+        match DesktopFile::new(&path, proj_dirs) {
             Ok(desktop_file) => desktop_files.push(desktop_file),
             Err(e) => {
                 warn!("Failed to parse desktop file {}: {e}", path.display());
@@ -66,7 +68,7 @@ pub fn get_shortcuts(proj_dirs: &ProjectDirs) -> anyhow::Result<Vec<DesktopFile>
 }
 
 impl DesktopFile {
-    fn new(file_path: impl AsRef<Path>) -> anyhow::Result<Self> {
+    fn new(file_path: impl AsRef<Path>, proj_dirs: &ProjectDirs) -> anyhow::Result<Self> {
         let file_path = file_path.as_ref();
         let entry = parse_entry(file_path)
             .with_context(|| format!("Failed to parse {}", file_path.display()))?;
@@ -86,7 +88,7 @@ impl DesktopFile {
             .split_first()
             .with_context(|| format!("`Exec` field in {} is empty", file_path.display()))?;
 
-        let icon = desktop_section.attr("Icon").and_then(|field| {
+        let mut icon = desktop_section.attr("Icon").and_then(|field| {
             lookup(field)
                 .with_size(512)
                 .with_cache()
@@ -102,6 +104,25 @@ impl DesktopFile {
                 "No `Icon` field in {}, falling back to default",
                 file_path.display()
             );
+        } else {
+            let icon_path = icon.as_ref().with_context(|| "Icon path was None")?;
+            let stem = Path::new(icon_path)
+                .file_stem()
+                .unwrap_or_default()
+                .to_string_lossy();
+
+            let icon_data = fs::read(icon_path)
+                .with_context(|| format!("Failed to read from `{:?}`", icon_path))?;
+
+            if is_svg(icon_data) {
+                let cache_dir = proj_dirs.cache_dir();
+                if !cache_dir.exists() {
+                    fs::create_dir_all(cache_dir)?;
+                }
+                let png_path = cache_dir.join(format!("{}.png", stem));
+                convert_to_svg(icon_path, &png_path)?;
+                icon = Some(png_path);
+            }
         }
 
         Ok(Self {
