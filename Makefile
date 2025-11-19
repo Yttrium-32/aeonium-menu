@@ -13,10 +13,10 @@ install:
 	@echo "Installed aeonium-menu to $(BIN_INSTALL_DIR)"
 
 gui:
-	cargo build --release -v --bin aeonium-menu
+	cargo build --release --bin aeonium-menu
 
 menu:
-	cargo build --release -v --bin aeonium-gui
+	cargo build --release --bin aeonium-gui
 
 clean:
 	cargo clean
