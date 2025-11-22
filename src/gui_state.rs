@@ -22,8 +22,7 @@ pub struct GuiState {
     gui_stdin: Option<ChildStdin>,
     highlight_idx: Option<usize>,
     idle_duration: Option<Instant>,
-    config_dir: PathBuf,
-    data_dir: PathBuf,
+    gui_bin_path: PathBuf,
 }
 
 impl GuiState {
@@ -33,8 +32,7 @@ impl GuiState {
             gui_stdin: None,
             highlight_idx: None,
             idle_duration: None,
-            config_dir: proj_dirs.config_dir().to_path_buf(),
-            data_dir: proj_dirs.data_dir().to_path_buf()
+            gui_bin_path: proj_dirs.data_dir().join("aeonium-gui")
         }
     }
 
@@ -92,10 +90,9 @@ impl GuiState {
             EventType::MenuUp | EventType::MenuDown | EventType::Scroll(_)
                 if self.gui_process.is_none() =>
             {
-                let gui_exe_path = self.data_dir.join("aeonium-gui");
-                info!("Looking for GUI exe at {:?}", gui_exe_path);
+                info!("Looking for GUI exe at {:?}", self.gui_bin_path);
 
-                let mut cmd = Command::new(gui_exe_path);
+                let mut cmd = Command::new(&self.gui_bin_path);
                 cmd.arg(segments.to_string());
 
                 for desktop_file in shortcut_files {
