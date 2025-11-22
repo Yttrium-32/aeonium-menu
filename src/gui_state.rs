@@ -62,12 +62,12 @@ impl GuiState {
                     self.highlight_idx,
                 ) {
                     if start.elapsed() > Duration::from_secs(1) {
-                        writeln!(stdin, "QUIT").context("Failed to write GUI stdin")?;
+                        writeln!(stdin, "QUIT").context("Failed to write to GUI stdin")?;
                         self.idle_duration = None;
                         shortcut_files[idx].spawn_process()?;
 
                         if let Some(mut child) = self.gui_process.take() {
-                            let status = child.wait().context("Failed to wait for GUI process")?;
+                            let status = child.wait().context("GUI process wasn't running")?;
 
                             match status.code() {
                                 Some(code) => info!("GUI process exited with status code: {code}"),
