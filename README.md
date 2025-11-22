@@ -18,28 +18,21 @@ The name of this project is taken from flowers of the same name.
 
 ---
 
-## Planned Features
-- [ ] Systray Icon
-- [ ] Heavy customisability
-- [ ] Configuration menu
-- [ ] Integration with systemd
-- [ ] Wayland support
-
 ## Build Instructions
+> [!Note]
+> The main binary expects the GUI binary to be at the path `~/.local/share/aeonium` which is why installation is required before usage and testing.
+> If you wish to clean everything simply delete `$(BIN_INSTALL_DIR)/aeonium-menu,` `~/.local/share/aeonium/` and `~/.config/aeonium/` if any of those were created.
+
+Ensure `BIN_INSTALL_DIR` in the Makefile points to a value in `$PATH`.
 
 #### Build all binaries:
-
 ```bash
-cargo build
+make build
 ````
 
-This step ensures that all executables (including those in `src/bin/`) are
-compiled and discoverable, only then can the main application be run.
-
-#### Run main application:
-
+#### Install and run:
 ```bash
-cargo run
+make install && aeonium-menu
 ```
 
 ## Usage
@@ -49,7 +42,7 @@ cargo run
 ### Requirements
 - The user running the application must be added to the `input` group to
   allow global key bind and scroll detection through `libinput`.
-- Add your `.desktop` shortcuts to `~/.config/aeonium-menu/shortcuts/`
+- Add your `.desktop` shortcuts to `~/.config/aeonium-menu/shortcuts/` (Fallback to `~/.local/share/applications`)
 
 ### Current controls:
 
